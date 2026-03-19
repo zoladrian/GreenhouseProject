@@ -11,7 +11,8 @@ public sealed class MqttMessageIngestionServiceTests
     {
         var parser = new FakeParser(new ParsedSensorPayload(10m, 21.2m, 99, 200));
         var repository = new InMemoryReadingRepository();
-        var sut = new MqttMessageIngestionService(parser, repository);
+        var provisioning = new FixedProvisioning(Guid.Parse("11111111-1111-1111-1111-111111111111"));
+        var sut = new MqttMessageIngestionService(parser, repository, provisioning);
 
         var message = new IncomingMqttMessage(
             "zigbee2mqtt/Czujnik wilgotnosci 1",
@@ -29,7 +30,8 @@ public sealed class MqttMessageIngestionServiceTests
     {
         var parser = new FakeParser(new ParsedSensorPayload(null, null, null, null));
         var repository = new InMemoryReadingRepository();
-        var sut = new MqttMessageIngestionService(parser, repository);
+        var provisioning = new FixedProvisioning(Guid.Parse("22222222-2222-2222-2222-222222222222"));
+        var sut = new MqttMessageIngestionService(parser, repository, provisioning);
 
         var message = new IncomingMqttMessage(
             "zigbee2mqtt/bridge/health",
@@ -53,6 +55,19 @@ public sealed class MqttMessageIngestionServiceTests
         public ParsedSensorPayload ParseSensorPayload(string payloadJson) => _result;
     }
 
+    private sealed class FixedProvisioning : ISensorProvisioningService
+    {
+        private readonly Guid _id;
+
+        public FixedProvisioning(Guid id)
+        {
+            _id = id;
+        }
+
+        public Task<Guid> EnsureSensorAsync(string mqttIdentifier, CancellationToken cancellationToken) =>
+            Task.FromResult(_id);
+    }
+
     private sealed class InMemoryReadingRepository : ISensorReadingRepository
     {
         public List<SensorReading> Items { get; } = [];
@@ -65,5 +80,20 @@ public sealed class MqttMessageIngestionServiceTests
 
         public Task<IReadOnlyList<SensorReading>> GetLatestAsync(int count, CancellationToken cancellationToken)
             => Task.FromResult((IReadOnlyList<SensorReading>)Items.Take(count).ToList());
+
+        public Task<IReadOnlyList<SensorReading>> GetBySensorIdsAsync(
+            IReadOnlyList<Guid> sensorIds, DateTime from, DateTime to, CancellationToken cancellationToken)
+            => Task.FromResult((IReadOnlyList<SensorReading>)Items
+                .Where(r => r.SensorId.HasValue && sensorIds.Contains(r.SensorId.Value)
+                            && r.ReceivedAtUtc >= from && r.ReceivedAtUtc <= to)
+                .ToList());
+
+        public Task<IReadOnlyList<SensorReading>> GetLatestPerSensorAsync(
+            IReadOnlyList<Guid> sensorIds, CancellationToken cancellationToken)
+            => Task.FromResult((IReadOnlyList<SensorReading>)Items
+                .Where(r => r.SensorId.HasValue && sensorIds.Contains(r.SensorId.Value))
+                .GroupBy(r => r.SensorId)
+                .Select(g => g.OrderByDescending(r => r.ReceivedAtUtc).First())
+                .ToList());
     }
 }

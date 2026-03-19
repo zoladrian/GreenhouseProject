@@ -25,6 +25,8 @@ public static class DependencyInjection
             db.UseSqlite($"Data Source={databasePath}"));
 
         services.AddScoped<ISensorReadingRepository, EfSensorReadingRepository>();
+        services.AddScoped<INawaRepository, EfNawaRepository>();
+        services.AddScoped<ISensorRepository, EfSensorRepository>();
         services.AddSingleton<IMqttPayloadParser, JsonMqttPayloadParser>();
 
         return services;

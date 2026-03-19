@@ -1,0 +1,71 @@
+namespace Greenhouse.Domain.Sensors;
+
+public sealed class Sensor
+{
+    private Sensor()
+    {
+    }
+
+    public Guid Id { get; private set; }
+
+    /// <summary>
+    /// Identyfikator z topicu MQTT Zigbee2MQTT (friendly_name lub IEEE).
+    /// </summary>
+    public string ExternalId { get; private set; } = string.Empty;
+
+    public string? DisplayName { get; private set; }
+
+    public Guid? NawaId { get; private set; }
+
+    public DateTime CreatedAtUtc { get; private set; }
+
+    public static Sensor Register(string externalId)
+    {
+        if (string.IsNullOrWhiteSpace(externalId))
+        {
+            throw new ArgumentException("Identyfikator czujnika jest wymagany.", nameof(externalId));
+        }
+
+        var trimmed = externalId.Trim();
+        if (trimmed.Length > 120)
+        {
+            throw new ArgumentException("Identyfikator czujnika nie może przekraczać 120 znaków.", nameof(externalId));
+        }
+
+        return new Sensor
+        {
+            Id = Guid.NewGuid(),
+            ExternalId = trimmed,
+            DisplayName = null,
+            NawaId = null,
+            CreatedAtUtc = DateTime.UtcNow
+        };
+    }
+
+    public void SetDisplayName(string? displayName)
+    {
+        if (string.IsNullOrWhiteSpace(displayName))
+        {
+            DisplayName = null;
+            return;
+        }
+
+        var trimmed = displayName.Trim();
+        DisplayName = trimmed.Length > 120 ? trimmed[..120] : trimmed;
+    }
+
+    public void AssignToNawa(Guid nawaId)
+    {
+        if (nawaId == Guid.Empty)
+        {
+            throw new ArgumentException("Identyfikator nawy jest nieprawidłowy.", nameof(nawaId));
+        }
+
+        NawaId = nawaId;
+    }
+
+    public void UnassignFromNawa()
+    {
+        NawaId = null;
+    }
+}

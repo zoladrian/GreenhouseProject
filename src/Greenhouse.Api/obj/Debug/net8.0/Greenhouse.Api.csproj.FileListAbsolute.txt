@@ -3,7 +3,6 @@ C:\Users\Gigabyte\source\repos\GreenhouseProject\src\Greenhouse.Api\obj\Debug\ne
 C:\Users\Gigabyte\source\repos\GreenhouseProject\src\Greenhouse.Api\obj\Debug\net8.0\Greenhouse.Api.AssemblyInfoInputs.cache
 C:\Users\Gigabyte\source\repos\GreenhouseProject\src\Greenhouse.Api\obj\Debug\net8.0\Greenhouse.Api.AssemblyInfo.cs
 C:\Users\Gigabyte\source\repos\GreenhouseProject\src\Greenhouse.Api\obj\Debug\net8.0\Greenhouse.Api.csproj.CoreCompileInputs.cache
-C:\Users\Gigabyte\source\repos\GreenhouseProject\src\Greenhouse.Api\obj\Debug\net8.0\Greenhouse.Api.MvcApplicationPartsAssemblyInfo.cs
 C:\Users\Gigabyte\source\repos\GreenhouseProject\src\Greenhouse.Api\obj\Debug\net8.0\Greenhouse.Api.MvcApplicationPartsAssemblyInfo.cache
 C:\Users\Gigabyte\source\repos\GreenhouseProject\src\Greenhouse.Api\bin\Debug\net8.0\appsettings.Development.json
 C:\Users\Gigabyte\source\repos\GreenhouseProject\src\Greenhouse.Api\bin\Debug\net8.0\appsettings.json
@@ -13,7 +12,6 @@ C:\Users\Gigabyte\source\repos\GreenhouseProject\src\Greenhouse.Api\bin\Debug\ne
 C:\Users\Gigabyte\source\repos\GreenhouseProject\src\Greenhouse.Api\bin\Debug\net8.0\Greenhouse.Api.runtimeconfig.json
 C:\Users\Gigabyte\source\repos\GreenhouseProject\src\Greenhouse.Api\bin\Debug\net8.0\Greenhouse.Api.dll
 C:\Users\Gigabyte\source\repos\GreenhouseProject\src\Greenhouse.Api\bin\Debug\net8.0\Greenhouse.Api.pdb
-C:\Users\Gigabyte\source\repos\GreenhouseProject\src\Greenhouse.Api\bin\Debug\net8.0\Microsoft.AspNetCore.OpenApi.dll
 C:\Users\Gigabyte\source\repos\GreenhouseProject\src\Greenhouse.Api\bin\Debug\net8.0\Microsoft.Data.Sqlite.dll
 C:\Users\Gigabyte\source\repos\GreenhouseProject\src\Greenhouse.Api\bin\Debug\net8.0\Microsoft.EntityFrameworkCore.dll
 C:\Users\Gigabyte\source\repos\GreenhouseProject\src\Greenhouse.Api\bin\Debug\net8.0\Microsoft.EntityFrameworkCore.Abstractions.dll
@@ -27,7 +25,6 @@ C:\Users\Gigabyte\source\repos\GreenhouseProject\src\Greenhouse.Api\bin\Debug\ne
 C:\Users\Gigabyte\source\repos\GreenhouseProject\src\Greenhouse.Api\bin\Debug\net8.0\Microsoft.Extensions.Logging.dll
 C:\Users\Gigabyte\source\repos\GreenhouseProject\src\Greenhouse.Api\bin\Debug\net8.0\Microsoft.Extensions.Logging.Abstractions.dll
 C:\Users\Gigabyte\source\repos\GreenhouseProject\src\Greenhouse.Api\bin\Debug\net8.0\Microsoft.Extensions.Options.dll
-C:\Users\Gigabyte\source\repos\GreenhouseProject\src\Greenhouse.Api\bin\Debug\net8.0\Microsoft.OpenApi.dll
 C:\Users\Gigabyte\source\repos\GreenhouseProject\src\Greenhouse.Api\bin\Debug\net8.0\SQLitePCLRaw.batteries_v2.dll
 C:\Users\Gigabyte\source\repos\GreenhouseProject\src\Greenhouse.Api\bin\Debug\net8.0\SQLitePCLRaw.core.dll
 C:\Users\Gigabyte\source\repos\GreenhouseProject\src\Greenhouse.Api\bin\Debug\net8.0\SQLitePCLRaw.provider.e_sqlite3.dll
@@ -73,3 +70,5 @@ C:\Users\Gigabyte\source\repos\GreenhouseProject\src\Greenhouse.Api\obj\Debug\ne
 C:\Users\Gigabyte\source\repos\GreenhouseProject\src\Greenhouse.Api\obj\Debug\net8.0\Greenhouse.Api.pdb
 C:\Users\Gigabyte\source\repos\GreenhouseProject\src\Greenhouse.Api\obj\Debug\net8.0\Greenhouse.Api.genruntimeconfig.cache
 C:\Users\Gigabyte\source\repos\GreenhouseProject\src\Greenhouse.Api\obj\Debug\net8.0\ref\Greenhouse.Api.dll
+C:\Users\Gigabyte\source\repos\GreenhouseProject\src\Greenhouse.Api\obj\Debug\net8.0\Greenhouse.Api.sourcelink.json
+C:\Users\Gigabyte\source\repos\GreenhouseProject\src\Greenhouse.Api\bin\Debug\net8.0\MQTTnet.dll

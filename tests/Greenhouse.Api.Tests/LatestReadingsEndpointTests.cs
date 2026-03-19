@@ -1,13 +1,12 @@
 using System.Net;
-using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace Greenhouse.Api.Tests;
 
-public sealed class LatestReadingsEndpointTests : IClassFixture<WebApplicationFactory<Program>>
+public sealed class LatestReadingsEndpointTests : IClassFixture<GreenhouseWebApplicationFactory>
 {
-    private readonly WebApplicationFactory<Program> _factory;
+    private readonly GreenhouseWebApplicationFactory _factory;
 
-    public LatestReadingsEndpointTests(WebApplicationFactory<Program> factory)
+    public LatestReadingsEndpointTests(GreenhouseWebApplicationFactory factory)
     {
         _factory = factory;
     }

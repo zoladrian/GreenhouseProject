@@ -2,25 +2,6 @@
   "version": 3,
   "targets": {
     "net8.0": {
-      "Microsoft.AspNetCore.OpenApi/8.0.22": {
-        "type": "package",
-        "dependencies": {
-          "Microsoft.OpenApi": "1.4.3"
-        },
-        "compile": {
-          "lib/net8.0/Microsoft.AspNetCore.OpenApi.dll": {
-            "related": ".xml"
-          }
-        },
-        "runtime": {
-          "lib/net8.0/Microsoft.AspNetCore.OpenApi.dll": {
-            "related": ".xml"
-          }
-        },
-        "frameworkReferences": [
-          "Microsoft.AspNetCore.App"
-        ]
-      },
       "Microsoft.Data.Sqlite.Core/8.0.22": {
         "type": "package",
         "dependencies": {
@@ -336,16 +317,16 @@
           "buildTransitive/net6.0/_._": {}
         }
       },
-      "Microsoft.OpenApi/1.4.3": {
+      "MQTTnet/5.1.0.1559": {
         "type": "package",
         "compile": {
-          "lib/netstandard2.0/Microsoft.OpenApi.dll": {
-            "related": ".pdb;.xml"
+          "lib/net8.0/MQTTnet.dll": {
+            "related": ".xml"
           }
         },
         "runtime": {
-          "lib/netstandard2.0/Microsoft.OpenApi.dll": {
-            "related": ".pdb;.xml"
+          "lib/net8.0/MQTTnet.dll": {
+            "related": ".xml"
           }
         }
       },
@@ -533,21 +514,6 @@
     }
   },
   "libraries": {
-    "Microsoft.AspNetCore.OpenApi/8.0.22": {
-      "sha512": "NljWP+NNJDu3Uls1OxiIrhOnhRTCdpJNLukJFMrBIPU1FyencrBFpgHiUuv/K5TqDPE7iKaZVreDSHSVhk4QrA==",
-      "type": "package",
-      "path": "microsoft.aspnetcore.openapi/8.0.22",
-      "files": [
-        ".nupkg.metadata",
-        ".signature.p7s",
-        "Icon.png",
-        "THIRD-PARTY-NOTICES.TXT",
-        "lib/net8.0/Microsoft.AspNetCore.OpenApi.dll",
-        "lib/net8.0/Microsoft.AspNetCore.OpenApi.xml",
-        "microsoft.aspnetcore.openapi.8.0.22.nupkg.sha512",
-        "microsoft.aspnetcore.openapi.nuspec"
-      ]
-    },
     "Microsoft.Data.Sqlite.Core/8.0.22": {
       "sha512": "x09ObAhKeabVMKRi3/jU0HvIcm0T/RxjSdqGmwbTeya/Iev+aPIB69atBuR+kfbZ9P+EspBSAQ0kQ5Qc/REsXQ==",
       "type": "package",
@@ -1064,18 +1030,21 @@
         "useSharedDesignerContext.txt"
       ]
     },
-    "Microsoft.OpenApi/1.4.3": {
-      "sha512": "rURwggB+QZYcSVbDr7HSdhw/FELvMlriW10OeOzjPT7pstefMo7IThhtNtDudxbXhW+lj0NfX72Ka5EDsG8x6w==",
+    "MQTTnet/5.1.0.1559": {
+      "sha512": "9mkk0H+76CToIzp9ru5Uj5BuC3P5hQdkhvXM+CLmmTDdZWqajjICCHuUMbDd1yVBt9BWL77Rvzt0A+/PA4WMCA==",
       "type": "package",
-      "path": "microsoft.openapi/1.4.3",
+      "path": "mqttnet/5.1.0.1559",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
-        "lib/netstandard2.0/Microsoft.OpenApi.dll",
-        "lib/netstandard2.0/Microsoft.OpenApi.pdb",
-        "lib/netstandard2.0/Microsoft.OpenApi.xml",
-        "microsoft.openapi.1.4.3.nupkg.sha512",
-        "microsoft.openapi.nuspec"
+        "LICENSE",
+        "lib/net10.0/MQTTnet.dll",
+        "lib/net10.0/MQTTnet.xml",
+        "lib/net8.0/MQTTnet.dll",
+        "lib/net8.0/MQTTnet.xml",
+        "mqttnet.5.1.0.1559.nupkg.sha512",
+        "mqttnet.nuspec",
+        "nuget.png"
       ]
     },
     "SQLitePCLRaw.bundle_e_sqlite3/2.1.6": {
@@ -1208,7 +1177,7 @@
     "net8.0": [
       "Greenhouse.Application >= 1.0.0",
       "Greenhouse.Infrastructure >= 1.0.0",
-      "Microsoft.AspNetCore.OpenApi >= 8.0.22"
+      "MQTTnet >= 5.1.0.1559"
     ]
   },
   "packageFolders": {
@@ -1269,9 +1238,9 @@
       "net8.0": {
         "targetAlias": "net8.0",
         "dependencies": {
-          "Microsoft.AspNetCore.OpenApi": {
+          "MQTTnet": {
             "target": "Package",
-            "version": "[8.0.22, )"
+            "version": "[5.1.0.1559, )"
           }
         },
         "imports": [

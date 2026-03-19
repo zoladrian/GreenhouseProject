@@ -22,5 +22,24 @@ public sealed class SensorReadingTests
         Assert.Equal(22.5m, reading.Temperature);
         Assert.Equal(100, reading.Battery);
         Assert.Equal(255, reading.LinkQuality);
+        Assert.Null(reading.SensorId);
+    }
+
+    [Fact]
+    public void Create_ShouldSetSensorId_WhenProvided()
+    {
+        var sid = Guid.NewGuid();
+        var reading = SensorReading.Create(
+            "sensor-1",
+            DateTime.UtcNow,
+            "zigbee2mqtt/sensor-1",
+            "{}",
+            null,
+            null,
+            null,
+            null,
+            sid);
+
+        Assert.Equal(sid, reading.SensorId);
     }
 }

@@ -318,7 +318,6 @@ C:\Users\Gigabyte\source\repos\GreenhouseProject\tests\Greenhouse.Api.Tests\bin\
 C:\Users\Gigabyte\source\repos\GreenhouseProject\tests\Greenhouse.Api.Tests\bin\Debug\net8.0\refs\System.Xml.XPath.XDocument.dll
 C:\Users\Gigabyte\source\repos\GreenhouseProject\tests\Greenhouse.Api.Tests\bin\Debug\net8.0\refs\WindowsBase.dll
 C:\Users\Gigabyte\source\repos\GreenhouseProject\tests\Greenhouse.Api.Tests\bin\Debug\net8.0\Microsoft.AspNetCore.Mvc.Testing.dll
-C:\Users\Gigabyte\source\repos\GreenhouseProject\tests\Greenhouse.Api.Tests\bin\Debug\net8.0\Microsoft.AspNetCore.OpenApi.dll
 C:\Users\Gigabyte\source\repos\GreenhouseProject\tests\Greenhouse.Api.Tests\bin\Debug\net8.0\Microsoft.AspNetCore.TestHost.dll
 C:\Users\Gigabyte\source\repos\GreenhouseProject\tests\Greenhouse.Api.Tests\bin\Debug\net8.0\Microsoft.VisualStudio.CodeCoverage.Shim.dll
 C:\Users\Gigabyte\source\repos\GreenhouseProject\tests\Greenhouse.Api.Tests\bin\Debug\net8.0\Microsoft.Data.Sqlite.dll
@@ -346,7 +345,6 @@ C:\Users\Gigabyte\source\repos\GreenhouseProject\tests\Greenhouse.Api.Tests\bin\
 C:\Users\Gigabyte\source\repos\GreenhouseProject\tests\Greenhouse.Api.Tests\bin\Debug\net8.0\Microsoft.Extensions.Logging.EventLog.dll
 C:\Users\Gigabyte\source\repos\GreenhouseProject\tests\Greenhouse.Api.Tests\bin\Debug\net8.0\Microsoft.Extensions.Logging.EventSource.dll
 C:\Users\Gigabyte\source\repos\GreenhouseProject\tests\Greenhouse.Api.Tests\bin\Debug\net8.0\Microsoft.Extensions.Options.dll
-C:\Users\Gigabyte\source\repos\GreenhouseProject\tests\Greenhouse.Api.Tests\bin\Debug\net8.0\Microsoft.OpenApi.dll
 C:\Users\Gigabyte\source\repos\GreenhouseProject\tests\Greenhouse.Api.Tests\bin\Debug\net8.0\Microsoft.TestPlatform.CoreUtilities.dll
 C:\Users\Gigabyte\source\repos\GreenhouseProject\tests\Greenhouse.Api.Tests\bin\Debug\net8.0\Microsoft.TestPlatform.PlatformAbstractions.dll
 C:\Users\Gigabyte\source\repos\GreenhouseProject\tests\Greenhouse.Api.Tests\bin\Debug\net8.0\Microsoft.VisualStudio.TestPlatform.ObjectModel.dll
@@ -469,3 +467,5 @@ C:\Users\Gigabyte\source\repos\GreenhouseProject\tests\Greenhouse.Api.Tests\obj\
 C:\Users\Gigabyte\source\repos\GreenhouseProject\tests\Greenhouse.Api.Tests\obj\Debug\net8.0\Greenhouse.Api.Tests.pdb
 C:\Users\Gigabyte\source\repos\GreenhouseProject\tests\Greenhouse.Api.Tests\obj\Debug\net8.0\Greenhouse.Api.Tests.genruntimeconfig.cache
 C:\Users\Gigabyte\source\repos\GreenhouseProject\tests\Greenhouse.Api.Tests\obj\Debug\net8.0\ref\Greenhouse.Api.Tests.dll
+C:\Users\Gigabyte\source\repos\GreenhouseProject\tests\Greenhouse.Api.Tests\obj\Debug\net8.0\Greenhouse.Api.Tests.sourcelink.json
+C:\Users\Gigabyte\source\repos\GreenhouseProject\tests\Greenhouse.Api.Tests\bin\Debug\net8.0\MQTTnet.dll

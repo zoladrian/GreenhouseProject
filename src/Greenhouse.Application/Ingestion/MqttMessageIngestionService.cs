@@ -10,13 +10,16 @@ public sealed class MqttMessageIngestionService : IMqttMessageIngestionService
 
     private readonly IMqttPayloadParser _payloadParser;
     private readonly ISensorReadingRepository _readingRepository;
+    private readonly ISensorProvisioningService _sensorProvisioning;
 
     public MqttMessageIngestionService(
         IMqttPayloadParser payloadParser,
-        ISensorReadingRepository readingRepository)
+        ISensorReadingRepository readingRepository,
+        ISensorProvisioningService sensorProvisioning)
     {
         _payloadParser = payloadParser;
         _readingRepository = readingRepository;
+        _sensorProvisioning = sensorProvisioning;
     }
 
     public async Task IngestAsync(IncomingMqttMessage message, CancellationToken cancellationToken)
@@ -28,6 +31,8 @@ public sealed class MqttMessageIngestionService : IMqttMessageIngestionService
 
         var parsed = _payloadParser.ParseSensorPayload(message.Payload);
 
+        var sensorId = await _sensorProvisioning.EnsureSensorAsync(sensorIdentifier, cancellationToken);
+
         var reading = SensorReading.Create(
             sensorIdentifier,
             message.ReceivedAtUtc,
@@ -36,7 +41,8 @@ public sealed class MqttMessageIngestionService : IMqttMessageIngestionService
             parsed.SoilMoisture,
             parsed.Temperature,
             parsed.Battery,
-            parsed.LinkQuality);
+            parsed.LinkQuality,
+            sensorId);
 
         await _readingRepository.AddAsync(reading, cancellationToken);
     }

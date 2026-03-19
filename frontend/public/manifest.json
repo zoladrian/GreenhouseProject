@@ -1,0 +1,9 @@
+{
+  "name": "Kwiaty Polskie — Szklarnia",
+  "short_name": "Szklarnia",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f4faf5",
+  "theme_color": "#45a249",
+  "icons": []
+}

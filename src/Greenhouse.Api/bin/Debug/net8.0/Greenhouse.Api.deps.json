@@ -10,21 +10,10 @@
         "dependencies": {
           "Greenhouse.Application": "1.0.0",
           "Greenhouse.Infrastructure": "1.0.0",
-          "Microsoft.AspNetCore.OpenApi": "8.0.22"
+          "MQTTnet": "5.1.0.1559"
         },
         "runtime": {
           "Greenhouse.Api.dll": {}
-        }
-      },
-      "Microsoft.AspNetCore.OpenApi/8.0.22": {
-        "dependencies": {
-          "Microsoft.OpenApi": "1.4.3"
-        },
-        "runtime": {
-          "lib/net8.0/Microsoft.AspNetCore.OpenApi.dll": {
-            "assemblyVersion": "8.0.22.0",
-            "fileVersion": "8.0.2225.52808"
-          }
         }
       },
       "Microsoft.Data.Sqlite.Core/8.0.22": {
@@ -192,11 +181,11 @@
         }
       },
       "Microsoft.Extensions.Primitives/8.0.0": {},
-      "Microsoft.OpenApi/1.4.3": {
+      "MQTTnet/5.1.0.1559": {
         "runtime": {
-          "lib/netstandard2.0/Microsoft.OpenApi.dll": {
-            "assemblyVersion": "1.4.3.0",
-            "fileVersion": "1.4.3.0"
+          "lib/net8.0/MQTTnet.dll": {
+            "assemblyVersion": "5.1.0.1559",
+            "fileVersion": "5.1.0.1559"
           }
         }
       },
@@ -382,13 +371,6 @@
       "serviceable": false,
       "sha512": ""
     },
-    "Microsoft.AspNetCore.OpenApi/8.0.22": {
-      "type": "package",
-      "serviceable": true,
-      "sha512": "sha512-NljWP+NNJDu3Uls1OxiIrhOnhRTCdpJNLukJFMrBIPU1FyencrBFpgHiUuv/K5TqDPE7iKaZVreDSHSVhk4QrA==",
-      "path": "microsoft.aspnetcore.openapi/8.0.22",
-      "hashPath": "microsoft.aspnetcore.openapi.8.0.22.nupkg.sha512"
-    },
     "Microsoft.Data.Sqlite.Core/8.0.22": {
       "type": "package",
       "serviceable": true,
@@ -515,12 +497,12 @@
       "path": "microsoft.extensions.primitives/8.0.0",
       "hashPath": "microsoft.extensions.primitives.8.0.0.nupkg.sha512"
     },
-    "Microsoft.OpenApi/1.4.3": {
+    "MQTTnet/5.1.0.1559": {
       "type": "package",
       "serviceable": true,
-      "sha512": "sha512-rURwggB+QZYcSVbDr7HSdhw/FELvMlriW10OeOzjPT7pstefMo7IThhtNtDudxbXhW+lj0NfX72Ka5EDsG8x6w==",
-      "path": "microsoft.openapi/1.4.3",
-      "hashPath": "microsoft.openapi.1.4.3.nupkg.sha512"
+      "sha512": "sha512-9mkk0H+76CToIzp9ru5Uj5BuC3P5hQdkhvXM+CLmmTDdZWqajjICCHuUMbDd1yVBt9BWL77Rvzt0A+/PA4WMCA==",
+      "path": "mqttnet/5.1.0.1559",
+      "hashPath": "mqttnet.5.1.0.1559.nupkg.sha512"
     },
     "SQLitePCLRaw.bundle_e_sqlite3/2.1.6": {
       "type": "package",

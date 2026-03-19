@@ -15,6 +15,7 @@ using (var scope = host.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<GreenhouseDbContext>();
     await dbContext.Database.EnsureCreatedAsync();
+    await SqlitePragmas.ApplyWalAsync(dbContext);
 }
 
 host.Run();

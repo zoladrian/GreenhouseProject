@@ -1,5 +1,6 @@
 using Greenhouse.Application.Abstractions;
 using Greenhouse.Application.Ingestion;
+using Greenhouse.Application.Sensors;
 using Greenhouse.Infrastructure.Mqtt;
 using Greenhouse.Infrastructure.Persistence;
 using Microsoft.Data.Sqlite;
@@ -23,8 +24,10 @@ public sealed class PersistenceIntegrationTests
         await dbContext.Database.EnsureCreatedAsync();
 
         ISensorReadingRepository repository = new EfSensorReadingRepository(dbContext);
+        ISensorRepository sensorRepository = new EfSensorRepository(dbContext);
+        var provisioning = new SensorProvisioningService(sensorRepository);
         IMqttPayloadParser parser = new JsonMqttPayloadParser();
-        var service = new MqttMessageIngestionService(parser, repository);
+        var service = new MqttMessageIngestionService(parser, repository, provisioning);
 
         var message = new IncomingMqttMessage(
             "zigbee2mqtt/Czujnik wilgotnosci 2",
@@ -37,5 +40,6 @@ public sealed class PersistenceIntegrationTests
         Assert.Single(latest);
         Assert.Equal(23.8m, latest[0].Temperature);
         Assert.Equal(0m, latest[0].SoilMoisture);
+        Assert.NotNull(latest[0].SensorId);
     }
 }

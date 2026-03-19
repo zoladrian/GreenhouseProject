@@ -103,3 +103,4 @@ C:\Users\Gigabyte\source\repos\GreenhouseProject\tests\Greenhouse.Application.Te
 C:\Users\Gigabyte\source\repos\GreenhouseProject\tests\Greenhouse.Application.Tests\obj\Debug\net8.0\Greenhouse.Application.Tests.pdb
 C:\Users\Gigabyte\source\repos\GreenhouseProject\tests\Greenhouse.Application.Tests\obj\Debug\net8.0\Greenhouse.Application.Tests.genruntimeconfig.cache
 C:\Users\Gigabyte\source\repos\GreenhouseProject\tests\Greenhouse.Application.Tests\obj\Debug\net8.0\ref\Greenhouse.Application.Tests.dll
+C:\Users\Gigabyte\source\repos\GreenhouseProject\tests\Greenhouse.Application.Tests\obj\Debug\net8.0\Greenhouse.Application.Tests.sourcelink.json

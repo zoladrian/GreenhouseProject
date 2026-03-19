@@ -21,6 +21,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Greenhouse.Api\Greenhouse.Api.csproj" />
+    <ProjectReference Include="..\..\src\Greenhouse.Application\Greenhouse.Application.csproj" />
     <ProjectReference Include="..\..\src\Greenhouse.Infrastructure\Greenhouse.Infrastructure.csproj" />
   </ItemGroup>
 

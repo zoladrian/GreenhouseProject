@@ -15,3 +15,4 @@ C:\Users\Gigabyte\source\repos\GreenhouseProject\src\Greenhouse.Infrastructure\o
 C:\Users\Gigabyte\source\repos\GreenhouseProject\src\Greenhouse.Infrastructure\obj\Debug\net8.0\refint\Greenhouse.Infrastructure.dll
 C:\Users\Gigabyte\source\repos\GreenhouseProject\src\Greenhouse.Infrastructure\obj\Debug\net8.0\Greenhouse.Infrastructure.pdb
 C:\Users\Gigabyte\source\repos\GreenhouseProject\src\Greenhouse.Infrastructure\obj\Debug\net8.0\ref\Greenhouse.Infrastructure.dll
+C:\Users\Gigabyte\source\repos\GreenhouseProject\src\Greenhouse.Infrastructure\obj\Debug\net8.0\Greenhouse.Infrastructure.sourcelink.json

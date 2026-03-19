@@ -1,6 +1,74 @@
-@Greenhouse.Api_HostAddress = http://localhost:5241
+@baseUrl = http://localhost:5000
 
-GET {{Greenhouse.Api_HostAddress}}/weatherforecast/
-Accept: application/json
+### Dashboard
+GET {{baseUrl}}/api/dashboard
 
-###
+### Readings latest
+GET {{baseUrl}}/api/readings/latest?count=10
+
+### Nawa list
+GET {{baseUrl}}/api/nawa
+
+### Create Nawa
+POST {{baseUrl}}/api/nawa
+Content-Type: application/json
+
+{
+  "name": "Nawa 1",
+  "description": "Pomidory koktajlowe"
+}
+
+### Update Nawa (replace {id})
+PUT {{baseUrl}}/api/nawa/{id}
+Content-Type: application/json
+
+{
+  "name": "Nawa 1",
+  "description": "Pomidory koktajlowe",
+  "plantNote": "Pomidory cherry",
+  "isActive": true,
+  "moistureMin": 20,
+  "moistureMax": 80,
+  "temperatureMin": 15,
+  "temperatureMax": 35
+}
+
+### Nawa detail (replace {id})
+GET {{baseUrl}}/api/nawa/{id}/detail
+
+### Sensor list
+GET {{baseUrl}}/api/sensor
+
+### Sensor health
+GET {{baseUrl}}/api/sensor/health
+
+### Sensor detail (replace {sensorId})
+GET {{baseUrl}}/api/sensor/{sensorId}
+
+### Assign sensor to nawa (replace {sensorId})
+PUT {{baseUrl}}/api/sensor/{sensorId}/nawa
+Content-Type: application/json
+
+{
+  "nawaId": "{nawaId}"
+}
+
+### Update sensor display name (replace {sensorId})
+PUT {{baseUrl}}/api/sensor/{sensorId}/display-name
+Content-Type: application/json
+
+{
+  "displayName": "Czujnik 1"
+}
+
+### Moisture chart (replace {nawaId})
+GET {{baseUrl}}/api/chart/moisture?nawaId={nawaId}
+
+### Watering events (replace {nawaId})
+GET {{baseUrl}}/api/chart/watering-events?nawaId={nawaId}
+
+### Drying rate (replace {nawaId})
+GET {{baseUrl}}/api/chart/drying-rate?nawaId={nawaId}
+
+### Reading history (replace {sensorId})
+GET {{baseUrl}}/api/readings/history/{sensorId}

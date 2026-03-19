@@ -13,3 +13,4 @@ C:\Users\Gigabyte\source\repos\GreenhouseProject\src\Greenhouse.Application\obj\
 C:\Users\Gigabyte\source\repos\GreenhouseProject\src\Greenhouse.Application\obj\Debug\net8.0\refint\Greenhouse.Application.dll
 C:\Users\Gigabyte\source\repos\GreenhouseProject\src\Greenhouse.Application\obj\Debug\net8.0\Greenhouse.Application.pdb
 C:\Users\Gigabyte\source\repos\GreenhouseProject\src\Greenhouse.Application\obj\Debug\net8.0\ref\Greenhouse.Application.dll
+C:\Users\Gigabyte\source\repos\GreenhouseProject\src\Greenhouse.Application\obj\Debug\net8.0\Greenhouse.Application.sourcelink.json

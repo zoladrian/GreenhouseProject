@@ -1,4 +1,3 @@
-using System.Text;
 using Greenhouse.Application.Abstractions;
 using MQTTnet;
 using MQTTnet.Protocol;
@@ -9,16 +8,16 @@ public class Worker : BackgroundService
 {
     private readonly ILogger<Worker> _logger;
     private readonly IConfiguration _configuration;
-    private readonly IMqttMessageIngestionService _ingestionService;
+    private readonly IServiceScopeFactory _scopeFactory;
 
     public Worker(
         ILogger<Worker> logger,
         IConfiguration configuration,
-        IMqttMessageIngestionService ingestionService)
+        IServiceScopeFactory scopeFactory)
     {
         _logger = logger;
         _configuration = configuration;
-        _ingestionService = ingestionService;
+        _scopeFactory = scopeFactory;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -32,10 +31,12 @@ public class Worker : BackgroundService
         client.ApplicationMessageReceivedAsync += async eventArgs =>
         {
             var topic = eventArgs.ApplicationMessage.Topic;
-            var payload = Encoding.UTF8.GetString(eventArgs.ApplicationMessage.PayloadSegment);
+            var payload = eventArgs.ApplicationMessage.ConvertPayloadToString();
 
+            using var scope = _scopeFactory.CreateScope();
+            var ingestion = scope.ServiceProvider.GetRequiredService<IMqttMessageIngestionService>();
             var message = new IncomingMqttMessage(topic, payload, DateTime.UtcNow);
-            await _ingestionService.IngestAsync(message, stoppingToken);
+            await ingestion.IngestAsync(message, stoppingToken);
         };
 
         var mqttOptions = new MqttClientOptionsBuilder()

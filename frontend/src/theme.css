@@ -1,0 +1,24 @@
+:root {
+  --color-brand-green: #45a249;
+  --color-brand-green-dark: #2e7d32;
+  --color-accent-red: #d32f2f;
+  --color-page-bg: #f4faf5;
+  --color-surface: #ffffff;
+  --color-text: #1a1a1a;
+  --color-text-muted: #5c6b5f;
+  --color-border: #e2ede3;
+  --color-header-bg: #ffffff;
+  --color-header-border: var(--color-brand-green);
+  --radius-card: 12px;
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

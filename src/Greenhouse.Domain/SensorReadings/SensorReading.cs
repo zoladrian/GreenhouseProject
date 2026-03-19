@@ -24,6 +24,11 @@ public sealed class SensorReading
 
     public int? LinkQuality { get; private set; }
 
+    /// <summary>
+    /// Opcjonalne powiązanie z zarejestrowanym czujnikiem w systemie (klucz obcy).
+    /// </summary>
+    public Guid? SensorId { get; private set; }
+
     public static SensorReading Create(
         string sensorIdentifier,
         DateTime receivedAtUtc,
@@ -32,7 +37,8 @@ public sealed class SensorReading
         decimal? soilMoisture,
         decimal? temperature,
         int? battery,
-        int? linkQuality)
+        int? linkQuality,
+        Guid? sensorId = null)
     {
         if (string.IsNullOrWhiteSpace(sensorIdentifier))
         {
@@ -59,7 +65,8 @@ public sealed class SensorReading
             SoilMoisture = soilMoisture,
             Temperature = temperature,
             Battery = battery,
-            LinkQuality = linkQuality
+            LinkQuality = linkQuality,
+            SensorId = sensorId
         };
     }
 }

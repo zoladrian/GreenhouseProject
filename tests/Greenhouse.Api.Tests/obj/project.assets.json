@@ -32,25 +32,6 @@
           "buildTransitive/net8.0/Microsoft.AspNetCore.Mvc.Testing.targets": {}
         }
       },
-      "Microsoft.AspNetCore.OpenApi/8.0.22": {
-        "type": "package",
-        "dependencies": {
-          "Microsoft.OpenApi": "1.4.3"
-        },
-        "compile": {
-          "lib/net8.0/Microsoft.AspNetCore.OpenApi.dll": {
-            "related": ".xml"
-          }
-        },
-        "runtime": {
-          "lib/net8.0/Microsoft.AspNetCore.OpenApi.dll": {
-            "related": ".xml"
-          }
-        },
-        "frameworkReferences": [
-          "Microsoft.AspNetCore.App"
-        ]
-      },
       "Microsoft.AspNetCore.TestHost/8.0.22": {
         "type": "package",
         "dependencies": {
@@ -845,19 +826,6 @@
           "buildMultiTargeting/Microsoft.NET.Test.Sdk.props": {}
         }
       },
-      "Microsoft.OpenApi/1.4.3": {
-        "type": "package",
-        "compile": {
-          "lib/netstandard2.0/Microsoft.OpenApi.dll": {
-            "related": ".pdb;.xml"
-          }
-        },
-        "runtime": {
-          "lib/netstandard2.0/Microsoft.OpenApi.dll": {
-            "related": ".pdb;.xml"
-          }
-        }
-      },
       "Microsoft.TestPlatform.ObjectModel/17.12.0": {
         "type": "package",
         "dependencies": {
@@ -1105,6 +1073,19 @@
         },
         "build": {
           "build/netcoreapp3.1/Microsoft.TestPlatform.TestHost.props": {}
+        }
+      },
+      "MQTTnet/5.1.0.1559": {
+        "type": "package",
+        "compile": {
+          "lib/net8.0/MQTTnet.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/net8.0/MQTTnet.dll": {
+            "related": ".xml"
+          }
         }
       },
       "Newtonsoft.Json/13.0.1": {
@@ -1417,7 +1398,7 @@
         "dependencies": {
           "Greenhouse.Application": "1.0.0",
           "Greenhouse.Infrastructure": "1.0.0",
-          "Microsoft.AspNetCore.OpenApi": "8.0.22"
+          "MQTTnet": "5.1.0.1559"
         },
         "compile": {
           "bin/placeholder/Greenhouse.Api.dll": {}
@@ -1559,21 +1540,6 @@
         "microsoft.aspnetcore.mvc.testing.8.0.22.nupkg.sha512",
         "microsoft.aspnetcore.mvc.testing.nuspec",
         "tasks/netstandard2.0/Microsoft.AspNetCore.Mvc.Testing.Tasks.dll"
-      ]
-    },
-    "Microsoft.AspNetCore.OpenApi/8.0.22": {
-      "sha512": "NljWP+NNJDu3Uls1OxiIrhOnhRTCdpJNLukJFMrBIPU1FyencrBFpgHiUuv/K5TqDPE7iKaZVreDSHSVhk4QrA==",
-      "type": "package",
-      "path": "microsoft.aspnetcore.openapi/8.0.22",
-      "files": [
-        ".nupkg.metadata",
-        ".signature.p7s",
-        "Icon.png",
-        "THIRD-PARTY-NOTICES.TXT",
-        "lib/net8.0/Microsoft.AspNetCore.OpenApi.dll",
-        "lib/net8.0/Microsoft.AspNetCore.OpenApi.xml",
-        "microsoft.aspnetcore.openapi.8.0.22.nupkg.sha512",
-        "microsoft.aspnetcore.openapi.nuspec"
       ]
     },
     "Microsoft.AspNetCore.TestHost/8.0.22": {
@@ -2768,20 +2734,6 @@
         "microsoft.net.test.sdk.nuspec"
       ]
     },
-    "Microsoft.OpenApi/1.4.3": {
-      "sha512": "rURwggB+QZYcSVbDr7HSdhw/FELvMlriW10OeOzjPT7pstefMo7IThhtNtDudxbXhW+lj0NfX72Ka5EDsG8x6w==",
-      "type": "package",
-      "path": "microsoft.openapi/1.4.3",
-      "files": [
-        ".nupkg.metadata",
-        ".signature.p7s",
-        "lib/netstandard2.0/Microsoft.OpenApi.dll",
-        "lib/netstandard2.0/Microsoft.OpenApi.pdb",
-        "lib/netstandard2.0/Microsoft.OpenApi.xml",
-        "microsoft.openapi.1.4.3.nupkg.sha512",
-        "microsoft.openapi.nuspec"
-      ]
-    },
     "Microsoft.TestPlatform.ObjectModel/17.12.0": {
       "sha512": "TDqkTKLfQuAaPcEb3pDDWnh7b3SyZF+/W9OZvWFp6eJCIiiYFdSB6taE2I6tWrFw5ywhzOb6sreoGJTI6m3rSQ==",
       "type": "package",
@@ -2948,6 +2900,23 @@
         "lib/netcoreapp3.1/zh-Hant/Microsoft.VisualStudio.TestPlatform.Common.resources.dll",
         "microsoft.testplatform.testhost.17.12.0.nupkg.sha512",
         "microsoft.testplatform.testhost.nuspec"
+      ]
+    },
+    "MQTTnet/5.1.0.1559": {
+      "sha512": "9mkk0H+76CToIzp9ru5Uj5BuC3P5hQdkhvXM+CLmmTDdZWqajjICCHuUMbDd1yVBt9BWL77Rvzt0A+/PA4WMCA==",
+      "type": "package",
+      "path": "mqttnet/5.1.0.1559",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "LICENSE",
+        "lib/net10.0/MQTTnet.dll",
+        "lib/net10.0/MQTTnet.xml",
+        "lib/net8.0/MQTTnet.dll",
+        "lib/net8.0/MQTTnet.xml",
+        "mqttnet.5.1.0.1559.nupkg.sha512",
+        "mqttnet.nuspec",
+        "nuget.png"
       ]
     },
     "Newtonsoft.Json/13.0.1": {
@@ -3344,6 +3313,7 @@
   "projectFileDependencyGroups": {
     "net8.0": [
       "Greenhouse.Api >= 1.0.0",
+      "Greenhouse.Application >= 1.0.0",
       "Greenhouse.Infrastructure >= 1.0.0",
       "Microsoft.AspNetCore.Mvc.Testing >= 8.0.22",
       "Microsoft.NET.Test.Sdk >= 17.12.0",
@@ -3387,6 +3357,9 @@
           "projectReferences": {
             "C:\\Users\\Gigabyte\\source\\repos\\GreenhouseProject\\src\\Greenhouse.Api\\Greenhouse.Api.csproj": {
               "projectPath": "C:\\Users\\Gigabyte\\source\\repos\\GreenhouseProject\\src\\Greenhouse.Api\\Greenhouse.Api.csproj"
+            },
+            "C:\\Users\\Gigabyte\\source\\repos\\GreenhouseProject\\src\\Greenhouse.Application\\Greenhouse.Application.csproj": {
+              "projectPath": "C:\\Users\\Gigabyte\\source\\repos\\GreenhouseProject\\src\\Greenhouse.Application\\Greenhouse.Application.csproj"
             },
             "C:\\Users\\Gigabyte\\source\\repos\\GreenhouseProject\\src\\Greenhouse.Infrastructure\\Greenhouse.Infrastructure.csproj": {
               "projectPath": "C:\\Users\\Gigabyte\\source\\repos\\GreenhouseProject\\src\\Greenhouse.Infrastructure\\Greenhouse.Infrastructure.csproj"

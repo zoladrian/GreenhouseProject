@@ -1,10 +1,9 @@
 {
   "version": 2,
-  "dgSpecHash": "gcNzD2KnhjQ=",
+  "dgSpecHash": "qkelrY+0rhM=",
   "success": true,
   "projectFilePath": "C:\\Users\\Gigabyte\\source\\repos\\GreenhouseProject\\src\\Greenhouse.Api\\Greenhouse.Api.csproj",
   "expectedPackageFiles": [
-    "C:\\Users\\Gigabyte\\.nuget\\packages\\microsoft.aspnetcore.openapi\\8.0.22\\microsoft.aspnetcore.openapi.8.0.22.nupkg.sha512",
     "C:\\Users\\Gigabyte\\.nuget\\packages\\microsoft.data.sqlite.core\\8.0.22\\microsoft.data.sqlite.core.8.0.22.nupkg.sha512",
     "C:\\Users\\Gigabyte\\.nuget\\packages\\microsoft.entityframeworkcore\\8.0.22\\microsoft.entityframeworkcore.8.0.22.nupkg.sha512",
     "C:\\Users\\Gigabyte\\.nuget\\packages\\microsoft.entityframeworkcore.abstractions\\8.0.22\\microsoft.entityframeworkcore.abstractions.8.0.22.nupkg.sha512",
@@ -23,7 +22,7 @@
     "C:\\Users\\Gigabyte\\.nuget\\packages\\microsoft.extensions.logging.abstractions\\8.0.2\\microsoft.extensions.logging.abstractions.8.0.2.nupkg.sha512",
     "C:\\Users\\Gigabyte\\.nuget\\packages\\microsoft.extensions.options\\8.0.2\\microsoft.extensions.options.8.0.2.nupkg.sha512",
     "C:\\Users\\Gigabyte\\.nuget\\packages\\microsoft.extensions.primitives\\8.0.0\\microsoft.extensions.primitives.8.0.0.nupkg.sha512",
-    "C:\\Users\\Gigabyte\\.nuget\\packages\\microsoft.openapi\\1.4.3\\microsoft.openapi.1.4.3.nupkg.sha512",
+    "C:\\Users\\Gigabyte\\.nuget\\packages\\mqttnet\\5.1.0.1559\\mqttnet.5.1.0.1559.nupkg.sha512",
     "C:\\Users\\Gigabyte\\.nuget\\packages\\sqlitepclraw.bundle_e_sqlite3\\2.1.6\\sqlitepclraw.bundle_e_sqlite3.2.1.6.nupkg.sha512",
     "C:\\Users\\Gigabyte\\.nuget\\packages\\sqlitepclraw.core\\2.1.6\\sqlitepclraw.core.2.1.6.nupkg.sha512",
     "C:\\Users\\Gigabyte\\.nuget\\packages\\sqlitepclraw.lib.e_sqlite3\\2.1.6\\sqlitepclraw.lib.e_sqlite3.2.1.6.nupkg.sha512",

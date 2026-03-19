@@ -58,9 +58,9 @@
         "net8.0": {
           "targetAlias": "net8.0",
           "dependencies": {
-            "Microsoft.AspNetCore.OpenApi": {
+            "MQTTnet": {
               "target": "Package",
-              "version": "[8.0.22, )"
+              "version": "[5.1.0.1559, )"
             }
           },
           "imports": [
@@ -346,6 +346,9 @@
             "projectReferences": {
               "C:\\Users\\Gigabyte\\source\\repos\\GreenhouseProject\\src\\Greenhouse.Api\\Greenhouse.Api.csproj": {
                 "projectPath": "C:\\Users\\Gigabyte\\source\\repos\\GreenhouseProject\\src\\Greenhouse.Api\\Greenhouse.Api.csproj"
+              },
+              "C:\\Users\\Gigabyte\\source\\repos\\GreenhouseProject\\src\\Greenhouse.Application\\Greenhouse.Application.csproj": {
+                "projectPath": "C:\\Users\\Gigabyte\\source\\repos\\GreenhouseProject\\src\\Greenhouse.Application\\Greenhouse.Application.csproj"
               },
               "C:\\Users\\Gigabyte\\source\\repos\\GreenhouseProject\\src\\Greenhouse.Infrastructure\\Greenhouse.Infrastructure.csproj": {
                 "projectPath": "C:\\Users\\Gigabyte\\source\\repos\\GreenhouseProject\\src\\Greenhouse.Infrastructure\\Greenhouse.Infrastructure.csproj"

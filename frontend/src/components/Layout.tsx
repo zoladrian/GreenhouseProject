@@ -1,0 +1,39 @@
+import { NavLink, Outlet } from 'react-router-dom';
+
+const navItems = [
+  { to: '/', label: 'Dashboard' },
+  { to: '/nawy', label: 'Nawy' },
+  { to: '/sensory', label: 'Sensory' },
+  { to: '/zdrowie', label: 'Zdrowie' },
+];
+
+export function Layout() {
+  return (
+    <div className="app-shell">
+      <header className="app-header">
+        <img
+          className="app-header__logo"
+          src="/images/kwiaty-polskie-logo.svg"
+          alt=""
+          width={40}
+          height={40}
+          decoding="async"
+        />
+        <div className="app-header__titles">
+          <span className="app-header__brand">Kwiaty Polskie</span>
+          <span className="app-header__sub">Szklarnia — monitoring</span>
+        </div>
+      </header>
+      <main className="app-main">
+        <Outlet />
+      </main>
+      <nav className="app-nav">
+        {navItems.map((item) => (
+          <NavLink key={item.to} to={item.to} className={({ isActive }) => (isActive ? 'active' : '')}>
+            {item.label}
+          </NavLink>
+        ))}
+      </nav>
+    </div>
+  );
+}
