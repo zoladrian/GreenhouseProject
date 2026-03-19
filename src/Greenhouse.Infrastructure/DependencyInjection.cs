@@ -1,0 +1,32 @@
+using Greenhouse.Application.Abstractions;
+using Greenhouse.Infrastructure.Mqtt;
+using Greenhouse.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace Greenhouse.Infrastructure;
+
+public static class DependencyInjection
+{
+    public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
+    {
+        var options = new InfrastructureOptions();
+        configuration.GetSection(InfrastructureOptions.SectionName).Bind(options);
+
+        var databasePath = Path.GetFullPath(options.DatabasePath);
+        var databaseDirectory = Path.GetDirectoryName(databasePath);
+        if (!string.IsNullOrWhiteSpace(databaseDirectory))
+        {
+            Directory.CreateDirectory(databaseDirectory);
+        }
+
+        services.AddDbContext<GreenhouseDbContext>(db =>
+            db.UseSqlite($"Data Source={databasePath}"));
+
+        services.AddScoped<ISensorReadingRepository, EfSensorReadingRepository>();
+        services.AddSingleton<IMqttPayloadParser, JsonMqttPayloadParser>();
+
+        return services;
+    }
+}
