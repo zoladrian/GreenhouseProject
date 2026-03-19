@@ -7,12 +7,12 @@ RUN npx vite build
 
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS backend-build
 WORKDIR /src
-COPY *.sln ./
+# Restore tylko łańcuch Api (bez Workers i testów z .sln — ich plików jeszcze nie ma w obrazie).
 COPY src/Greenhouse.Domain/Greenhouse.Domain.csproj src/Greenhouse.Domain/
 COPY src/Greenhouse.Application/Greenhouse.Application.csproj src/Greenhouse.Application/
 COPY src/Greenhouse.Infrastructure/Greenhouse.Infrastructure.csproj src/Greenhouse.Infrastructure/
 COPY src/Greenhouse.Api/Greenhouse.Api.csproj src/Greenhouse.Api/
-RUN dotnet restore
+RUN dotnet restore src/Greenhouse.Api/Greenhouse.Api.csproj
 
 COPY src/ src/
 RUN dotnet publish src/Greenhouse.Api/Greenhouse.Api.csproj -c Release -o /publish/api

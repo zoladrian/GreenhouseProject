@@ -43,6 +43,10 @@ Baza SQLite na wolumenie `greenhouse-data` (`/app/data/greenhouse.db`), tryb **W
 docker buildx build --platform linux/arm64 -t greenhouse-api:local -f Dockerfile .
 ```
 
+## Build Docker — błąd MSB3202 (brak .csproj)
+
+Jeśli `docker compose build` kończy się błędem w stylu „project file … Greenhouse.Workers … not found” przy `dotnet restore`, oznacza to stary Dockerfile przywracający **całe solution** przed skopiowaniem `src/`. Aktualny `Dockerfile` w repozytorium robi `dotnet restore` **wyłącznie** na `src/Greenhouse.Api/Greenhouse.Api.csproj`. Zrób `git pull` i buduj ponownie.
+
 ## Zmiana schematu bazy
 
 Obecnie używane jest `EnsureCreated`. Po zmianie encji usuń plik `greenhouse.db` na wolumenie lub przygotuj migracje EF (backlog).
