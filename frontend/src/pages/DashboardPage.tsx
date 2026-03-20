@@ -1,8 +1,9 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api, type NawaSnapshot } from '../api/client';
 import { useFetch } from '../hooks/useFetch';
-import { useTts } from '../hooks/useTts';
+import { speakPolish, useTts } from '../hooks/useTts';
+import { buildVoiceDailyReportText } from '../voice/voiceDailyReportText';
 import { StatusBadge } from '../components/StatusBadge';
 import { BatteryIcon } from '../components/BatteryIcon';
 import { DashboardHero } from '../components/DashboardHero';
@@ -11,6 +12,8 @@ export function DashboardPage() {
   const { data, loading, refetch } = useFetch(() => api.getDashboard());
   const navigate = useNavigate();
   const tts = useTts();
+  const [voiceReportLoading, setVoiceReportLoading] = useState(false);
+  const [voiceReportError, setVoiceReportError] = useState<string | null>(null);
 
   useEffect(() => {
     const interval = setInterval(refetch, 30_000);
@@ -31,12 +34,61 @@ export function DashboardPage() {
     <div>
       <DashboardHero />
 
-      <div className="dashboard-toolbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-        <h2>Dashboard</h2>
-        <label style={{ fontSize: 12, display: 'flex', alignItems: 'center', gap: 4 }} className="text-muted">
-          <input type="checkbox" checked={tts.enabled} onChange={(e) => tts.setEnabled(e.target.checked)} />
-          Głos
-        </label>
+      <div className="dashboard-toolbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12, gap: 12 }}>
+        <h2 style={{ margin: 0 }}>Dashboard</h2>
+        <div style={{ textAlign: 'right', maxWidth: 220 }}>
+          <label style={{ fontSize: 12, display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'flex-end' }} className="text-muted">
+            <input
+              type="checkbox"
+              checked={tts.enabled}
+              onChange={(e) => {
+                const on = e.target.checked;
+                tts.setEnabled(on);
+                if (on) {
+                  tts.speakImmediate(
+                    'Głos włączony. Usłyszysz ostrzeżenie, gdy nawa będzie w stanie sucho.',
+                  );
+                }
+              }}
+            />
+            Głos
+          </label>
+          <p style={{ fontSize: 10, color: '#94a3b8', margin: '4px 0 0', lineHeight: 1.35 }}>
+            Komunikat tylko przy statusie <strong>Sucho</strong> (nie przy każdym odświeżeniu). Na iPhonie część przeglądarek wymaga włączenia dźwięku i nie blokuje trybu cichego.
+          </p>
+        </div>
+      </div>
+
+      <div style={{ marginBottom: 16 }}>
+        <button
+          type="button"
+          className="btn-primary"
+          disabled={voiceReportLoading}
+          style={{ width: '100%', padding: '12px 16px', fontSize: 15, fontWeight: 600 }}
+          onClick={async () => {
+            setVoiceReportError(null);
+            setVoiceReportLoading(true);
+            try {
+              const report = await api.getVoiceDailyReport();
+              speakPolish(buildVoiceDailyReportText(report));
+            } catch (e) {
+              setVoiceReportError(e instanceof Error ? e.message : 'Błąd pobierania raportu');
+            } finally {
+              setVoiceReportLoading(false);
+            }
+          }}
+        >
+          {voiceReportLoading ? 'Ładowanie raportu…' : 'Odczytaj dzienny raport (głos)'}
+        </button>
+        <p style={{ fontSize: 11, color: '#94a3b8', margin: '6px 0 0', lineHeight: 1.35 }}>
+          Dane z maliny (średnie od lokalnej północy, strefa z konfiguracji API). Wymaga działającej syntezy mowy w
+          przeglądarce.
+        </p>
+        {voiceReportError && (
+          <p style={{ color: '#d32f2f', fontSize: 13, marginTop: 6 }} role="alert">
+            {voiceReportError}
+          </p>
+        )}
       </div>
 
       {(!data || data.length === 0) && <p className="text-muted">Brak naw. Dodaj pierwszą nawę.</p>}

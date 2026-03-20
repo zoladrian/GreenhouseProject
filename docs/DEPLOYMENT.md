@@ -66,6 +66,10 @@ Obecnie używane jest `EnsureCreated`. Po zmianie encji usuń plik `greenhouse.d
 | `Mqtt__Host` | Host brokera (w sieci compose: `mosquitto`) |
 | `Mqtt__Port` | Port (1883) |
 | `Mqtt__TopicFilter` | Filtr subskrypcji (domyślnie `zigbee2mqtt/#`) |
+| `Voice__GreetingLeadin` | Początek wypowiedzi głosowej (np. „Dzień dobry Panie Czesławie”) |
+| `Voice__TimeZoneId` | Strefa do „północy” przy średnich dziennych (domyślnie `Europe/Warsaw`) |
+
+**Raport głosowy (offline):** na dashboardzie przycisk „Odczytaj dzienny raport” wywołuje `GET /api/voice/daily-report` — średnie wilgotności i temperatury z czujników przypisanych do nawy od **lokalnej północy** w `Voice:TimeZoneId`. Bez internetu — bez pogody z sieci.
 
 ## Lokalny development (bez Dockera)
 

@@ -1,5 +1,8 @@
 @baseUrl = http://localhost:5000
 
+### Voice — dzienny raport (offline, średnie od północy w strefie Voice:TimeZoneId)
+GET {{baseUrl}}/api/voice/daily-report
+
 ### Dashboard
 GET {{baseUrl}}/api/dashboard
 

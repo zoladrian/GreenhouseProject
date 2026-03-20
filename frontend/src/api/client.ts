@@ -103,7 +103,24 @@ export interface DryingRateDto {
   percentPerHour: number;
 }
 
+export interface NawaVoiceLineDto {
+  order: number;
+  nawaName: string;
+  avgTemperature: number | null;
+  avgSoilMoisture: number | null;
+  readingCount: number;
+  assignedSensorCount: number;
+}
+
+export interface VoiceDailyReportDto {
+  greetingLeadin: string;
+  localTime: string;
+  localDateLong: string;
+  nawy: NawaVoiceLineDto[];
+}
+
 export const api = {
+  getVoiceDailyReport: () => fetchJson<VoiceDailyReportDto>('/voice/daily-report'),
   getDashboard: () => fetchJson<NawaSnapshot[]>('/dashboard'),
   getNawy: () => fetchJson<NawaDto[]>('/nawa'),
   getNawaDetail: (id: string) => fetchJson<NawaDetailDto>(`/nawa/${id}/detail`),

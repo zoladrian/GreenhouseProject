@@ -4,6 +4,7 @@ using Greenhouse.Application.Ingestion;
 using Greenhouse.Application.Nawy;
 using Greenhouse.Application.Readings;
 using Greenhouse.Application.Sensors;
+using Greenhouse.Application.Voice;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Greenhouse.Application;
@@ -34,6 +35,8 @@ public static class DependencyInjection
         services.AddScoped<GetMoistureSeriesQueryService>();
         services.AddScoped<GetWateringEventsQueryService>();
         services.AddScoped<GetDryingRatesQueryService>();
+
+        services.AddScoped<GetVoiceDailyReportQueryService>();
 
         return services;
     }

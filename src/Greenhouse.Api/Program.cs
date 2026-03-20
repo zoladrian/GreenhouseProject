@@ -5,6 +5,7 @@ using Greenhouse.Application.Charts;
 using Greenhouse.Application.Nawy;
 using Greenhouse.Application.Readings;
 using Greenhouse.Application.Sensors;
+using Greenhouse.Application.Voice;
 using Greenhouse.Infrastructure;
 using Greenhouse.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -13,6 +14,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.Configure<VoiceOptions>(builder.Configuration.GetSection(VoiceOptions.SectionName));
 
 var mqttOpts = new MqttOptions();
 builder.Configuration.GetSection(MqttOptions.SectionName).Bind(mqttOpts);
@@ -54,6 +56,13 @@ app.MapGet("/api/readings/history/{sensorId:guid}", async (
     var toUtc = to ?? DateTime.UtcNow;
     var result = await query.ExecuteAsync(sensorId, fromUtc, toUtc, ct);
     return Results.Ok(result);
+});
+
+// ─── Voice (offline daily report) ──────────────────────────
+app.MapGet("/api/voice/daily-report", async (GetVoiceDailyReportQueryService query, CancellationToken ct) =>
+{
+    var report = await query.ExecuteAsync(ct);
+    return Results.Ok(report);
 });
 
 // ─── Dashboard ─────────────────────────────────────────────
