@@ -34,6 +34,7 @@ echo "greenhouse-kiosk: start przeglądarki (kiosk) → ${URL}"
 exec "${BROWSER[@]}" \
   --kiosk \
   "${URL}" \
+  --password-store=basic \
   --disable-http-cache \
   --disable-infobars \
   --noerrdialogs \

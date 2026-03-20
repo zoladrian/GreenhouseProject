@@ -12,14 +12,22 @@ services:
     image: koenkk/zigbee2mqtt
     depends_on:
       - mosquitto
+    ports:
+      # Web UI / onboarding (z sieci LAN: http://<IP_malinki>:8080)
+      - "8080:8080"
     volumes:
       - zigbee2mqtt-data:/app/data
       - /run/udev:/run/udev:ro
     devices:
-      # Host: ścieżka do koordynatora; kontener: zgodnie z serial.port w configuration.yaml (np. /dev/ttyUSBZigbee)
-      - ${ZIGBEE_DEVICE:-/dev/ttyUSBZigbee}:/dev/ttyUSBZigbee
+      # Lewa strona = urządzenie na hoście (ustaw w .env jako ZIGBEE_DEVICE — patrz .env.example).
+      # Prawa strona = stała nazwa w kontenerze; w configuration.yaml Zigbee2MQTT: serial.port: /dev/ttyUSBZigbee
+      - ${ZIGBEE_DEVICE:-/dev/ttyACM0}:/dev/ttyUSBZigbee
     environment:
       - TZ=Europe/Warsaw
+      # Ważne: w kontenerze „localhost” to NIE broker Mosquitto — musi być nazwa serwisu compose.
+      # Nadpisuje błędne mqtt://localhost z pierwszego startu / starej konfiguracji.
+      - ZIGBEE2MQTT_CONFIG_MQTT_SERVER=mqtt://mosquitto:1883
+      - ZIGBEE2MQTT_CONFIG_SERIAL_PORT=/dev/ttyUSBZigbee
     restart: unless-stopped
 
   greenhouse-api:

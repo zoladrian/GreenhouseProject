@@ -1,0 +1,2 @@
+# Lokalna konfiguracja Docker (ścieżka do dongla Zigbee itd.)
+.env

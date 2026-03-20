@@ -17,17 +17,20 @@ Baza SQLite na wolumenie `greenhouse-data` (`/app/data/greenhouse.db`), tryb **W
 ## Pierwsze uruchomienie
 
 1. Sklonuj repozytorium na Pi.
-2. Ustal ścieżkę urządzenia koordynatora na hoście, np.:
+2. Ustal ścieżkę urządzenia koordynatora na hoście:
    ```bash
-   ls -la /dev/ttyUSB* /dev/ttyACM*
+   ls -la /dev/ttyUSB* /dev/ttyACM* 2>/dev/null
+   ls -la /dev/serial/by-id/
    ```
-3. Utwórz plik `.env` w katalogu projektu (opcjonalnie), np.:
-   ```env
-   ZIGBEE_DEVICE=/dev/ttyUSBZigbee
+   Wiele dongli na Pi pokazuje się jako **`/dev/ttyACM0`** lub **`/dev/ttyUSB0`**. Ścieżka **`/dev/ttyUSBZigbee`** to zwykle **własny symlink udev** — jeśli go nie tworzyłeś, **nie istnieje** i Docker zgłosi błąd.
+3. Utwórz plik **`.env`** w katalogu projektu (zalecane), np.:
+   ```bash
+   cp .env.example .env
+   nano .env   # ustaw ZIGBEE_DEVICE= na to, co wyszło w kroku 2
    ```
-   Domyślnie compose używa `/dev/ttyUSBZigbee` → mapowane na `/dev/ttyUSBZigbee` w kontenerze (zgodnie z typowym `serial.port` w `configuration.yaml`).
+   Domyślnie compose używa **`/dev/ttyACM0`** → w kontenerze zawsze **`/dev/ttyUSBZigbee`** (tak powinno być w `configuration.yaml` Zigbee2MQTT: `serial.port: /dev/ttyUSBZigbee`).
 
-4. **Zigbee2MQTT**: pierwszy start tworzy dane w wolumenie `zigbee2mqtt-data`. Jeśli masz już działającą konfigurację, możesz zamontować katalog z `configuration.yaml` zamiast czystego wolumenu — wtedy upewnij się, że `mqtt.server` wskazuje na `mqtt://mosquitto:1883`.
+4. **Zigbee2MQTT**: pierwszy start tworzy dane w wolumenie `zigbee2mqtt-data`. W `docker-compose.yml` ustawione są zmienne **`ZIGBEE2MQTT_CONFIG_MQTT_SERVER`** i **`ZIGBEE2MQTT_CONFIG_SERIAL_PORT`**, żeby Z2M łączył się z brokerem **`mosquitto`** (nie `localhost` w kontenerze) i z donglem **`/dev/ttyUSBZigbee`** w kontenerze. Interfejs web: **`http://<IP_malinki>:8080`** (port **8080** jest mapowany na host).
 
 5. Build i start:
    ```bash
@@ -74,7 +77,7 @@ To ten sam frontend co z telefonu — bez dodatkowych kontenerów.
 - Frontend w produkcji co ok. **45 s** wywołuje `GET /api/meta/deploy` i porównuje `deployId`. Gdy po **`docker compose up -d`** serwer zwraca **inny** identyfikator, strona robi **`location.reload()`** — bez ręcznego odświeżania na ekranie.
 - Na dole UI (pod nawigacją) wyświetla się pasek **„Wersja serwera”** z tym samym identyfikatorem (łatwo zobaczyć, czy wdrożenie doszło).
 
-**Wskazówki:** wyłączenie wygaszacza / blankowania ekranu: **Raspberry Pi Configuration** → **Display** lub ustawienia energii. Szczegóły: [`scripts/raspberry-pi/README.md`](../scripts/raspberry-pi/README.md).
+**Wskazówki:** wyłączenie wygaszacza / blankowania ekranu: **Raspberry Pi Configuration** → **Display** lub ustawienia energii. Jeśli przy pierwszym starcie Chromium pojawi się **nowy keyring** (hasło pierścienia) — na kiosku zwykle ustaw **puste hasło** albo użyj aktualnego `greenhouse-kiosk.sh` (flaga `--password-store=basic`, żeby Chromium nie pytał o keyring). Szczegóły: [`scripts/raspberry-pi/README.md`](../scripts/raspberry-pi/README.md).
 
 ## PWA — wygląd jak aplikacja (bez sklepu Play)
 
@@ -94,6 +97,22 @@ Frontend ma [`manifest.json`](../frontend/public/manifest.json) (`display: stand
 - Zakładka **Sensory** pokazuje zarejestrowane czujniki; **Przypisanie do nawy** powoduje, że wilgotność i wykresy pojawiają się na **Dashboardzie** i w szczegółach nawy.
 - Grafiki marki: [`frontend/public/images/README.md`](../frontend/public/images/README.md) — domyślnie `kwiaty-polskie-hero.png` i `kwiaty-polskie-logo.png` (w repozytorium).
 
+## Zigbee2MQTT — błąd `no such file ... /dev/ttyUSBZigbee`
+
+Docker sprawdza **ścieżkę po lewej** w mapowaniu `devices` (to jest plik urządzenia **na hoście**). Komunikat w stylu *„adding custom device \"/dev/ttyUSBZigbee\": no such file\"* oznacza, że **na Pi nie ma takiego pliku** — nazwa `/dev/ttyUSBZigbee` bywa tylko wtedy, gdy sam dodasz **symlink udev**; typowe dongle to **`/dev/ttyACM0`** lub **`/dev/ttyUSB0`**.
+
+**Naprawa:**
+
+1. Sprawdź urządzenia: `ls -la /dev/ttyUSB* /dev/ttyACM* /dev/serial/by-id/`
+2. Utwórz `.env` (wzór: [`.env.example`](../.env.example)):
+   ```env
+   ZIGBEE_DEVICE=/dev/ttyACM0
+   ```
+   (albo `/dev/ttyUSB0` albo stabilna ścieżka z `/dev/serial/by-id/...`)
+3. `docker compose up -d`
+
+W kontenerze port szeregowy ma nadal być **`/dev/ttyUSBZigbee`** (tak ustawia compose — zgodnie z `serial.port` w `configuration.yaml` Zigbee2MQTT).
+
 ## Build z komputera (ARM64)
 
 ```bash
@@ -112,6 +131,7 @@ Obecnie używane jest `EnsureCreated`. Po zmianie encji usuń plik `greenhouse.d
 
 | Zmienna | Opis |
 |---------|------|
+| `ZIGBEE_DEVICE` | (Plik **`.env`** obok `docker-compose.yml`, nie kontener API) Ścieżka do dongla Zigbee **na hoście**. Domyślnie w compose: `/dev/ttyACM0`. Patrz [`.env.example`](../.env.example). |
 | `Infrastructure__DatabasePath` | Ścieżka do pliku SQLite (w compose: `/app/data/greenhouse.db`) |
 | `Mqtt__Enabled` | `true`/`false` — wyłącza subskrypcję MQTT |
 | `Mqtt__Host` | Host brokera (w sieci compose: `mosquitto`) |
@@ -122,6 +142,38 @@ Obecnie używane jest `EnsureCreated`. Po zmianie encji usuń plik `greenhouse.d
 | `GREENHOUSE_DEPLOY_ID` | (Opcjonalnie) Nadpisuje identyfikator z obrazu; **zwykle nie ustawiaj** — wtedy każdy build Dockera ma unikalny `deploy-id` i panel sam się przeładuje po aktualizacji. |
 
 **Raport głosowy (offline):** na dashboardzie przycisk „Odczytaj dzienny raport” wywołuje `GET /api/voice/daily-report` — średnie wilgotności i temperatury z czujników przypisanych do nawy od **lokalnej północy** w `Voice:TimeZoneId`. Bez internetu — bez pogody z sieci.
+
+## Diagnostyka: `wiadomości z brokera=0` / brak ruchu na Mosquitto
+
+Skoro **API jest połączone z brokerem** (`MQTT połączono`), a **`wiadomości z brokera=0`** i `mosquitto_sub -t 'zigbee2mqtt/#'` **nic nie pokazuje**, to **Zigbee2MQTT nie publikuje** do tego samego Mosquitto (najczęściej w `configuration.yaml` jest **`mqtt://localhost`** — w kontenerze Z2M to **nie** usługa `mosquitto` w sieci Dockera).
+
+**Po `git pull`:** w aktualnym compose są zmienne `ZIGBEE2MQTT_CONFIG_MQTT_SERVER=mqtt://mosquitto:1883` oraz mapowanie **8080** — zrób:
+
+```bash
+cd ~/GreenhouseProject && git pull
+docker compose up -d
+docker compose logs zigbee2mqtt --tail 40
+```
+
+Szukaj w logach Z2M linii o połączeniu z MQTT / błędach. Potem:
+
+```bash
+timeout 20 docker exec greenhouseproject-mosquitto-1 mosquitto_sub -h localhost -t 'zigbee2mqtt/#' -v
+```
+
+(Po sparowaniu urządzeń powinny pojawić się komunikaty.)
+
+**Konfiguracja w wolumenie (weryfikacja):**
+
+```bash
+docker compose exec zigbee2mqtt cat /app/data/configuration.yaml
+```
+
+W sekcji `mqtt:` powinno być **`server: mqtt://mosquitto:1883`** (lub równoważne), nie `localhost`.
+
+## Wi‑Fi „szklarni” nie widać na telefonie
+
+To **osobna** rzecz od Dockera: sieć AP (`hostapd` / hotspot) musi być włączona i skonfigurowana **na hoście** Raspberry Pi (np. *Raspberry Pi Connect* / ręczny AP). Sam stack **GreenhouseProject** jej nie tworzy — wskazówki: [**CAPTIVE-PORTAL.md**](CAPTIVE-PORTAL.md) oraz ustawienia Wi‑Fi w *Raspberry Pi OS*. Panel nadal działa po **LAN** pod `http://<IP_malinki>:5000`.
 
 ## Diagnostyka: czujniki nie pojawiają się w aplikacji
 
