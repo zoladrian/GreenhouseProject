@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { api, type NawaSnapshot } from '../api/client';
 import { useFetch } from '../hooks/useFetch';
 import { useTts } from '../hooks/useTts';
@@ -40,6 +40,13 @@ export function DashboardPage() {
       </div>
 
       {(!data || data.length === 0) && <p className="text-muted">Brak naw. Dodaj pierwszą nawę.</p>}
+
+      {data && data.length > 0 && data.every((s) => s.sensorCount === 0) && (
+        <p className="text-muted" style={{ marginBottom: 12, fontSize: 14 }}>
+          Nawy są utworzone, ale <strong>żaden czujnik nie jest przypisany</strong>. Otwórz{' '}
+          <Link to="/sensory">Sensory</Link> i wybierz nawę przy każdym czujniku.
+        </p>
+      )}
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         {data?.map((snap) => (

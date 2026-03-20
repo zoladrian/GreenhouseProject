@@ -39,10 +39,17 @@ public sealed class MqttIngestionHostedService : BackgroundService
             var topic = eventArgs.ApplicationMessage.Topic;
             var payload = eventArgs.ApplicationMessage.ConvertPayloadToString();
 
-            using var scope = _scopeFactory.CreateScope();
-            var ingestion = scope.ServiceProvider.GetRequiredService<IMqttMessageIngestionService>();
-            var message = new IncomingMqttMessage(topic, payload, DateTime.UtcNow);
-            await ingestion.IngestAsync(message, stoppingToken);
+            try
+            {
+                using var scope = _scopeFactory.CreateScope();
+                var ingestion = scope.ServiceProvider.GetRequiredService<IMqttMessageIngestionService>();
+                var message = new IncomingMqttMessage(topic, payload, DateTime.UtcNow);
+                await ingestion.IngestAsync(message, stoppingToken);
+            }
+            catch (Exception exception)
+            {
+                _logger.LogWarning(exception, "MQTT ingest failed for topic {Topic}", topic);
+            }
         };
 
         var mqttOptions = new MqttClientOptionsBuilder()

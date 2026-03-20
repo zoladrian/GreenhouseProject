@@ -111,12 +111,23 @@ export const api = {
   updateNawa: (id: string, body: Record<string, unknown>) => putJson<NawaDto>(`/nawa/${id}`, body),
   getSensors: () => fetchJson<SensorListItem[]>('/sensor'),
   getSensorHealth: () => fetchJson<SensorHealthDto[]>('/sensor/health'),
-  assignSensor: (sensorId: string, nawaId: string | null) =>
-    fetch(`${BASE}/sensor/${sensorId}/nawa`, {
+  assignSensor: async (sensorId: string, nawaId: string | null) => {
+    const resp = await fetch(`${BASE}/sensor/${sensorId}/nawa`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ nawaId }),
-    }),
+    });
+    if (!resp.ok) {
+      let msg = `HTTP ${resp.status}`;
+      try {
+        const j = (await resp.json()) as { error?: string };
+        if (j?.error) msg = j.error;
+      } catch {
+        /* ignore */
+      }
+      throw new Error(msg);
+    }
+  },
   updateSensorDisplayName: (sensorId: string, displayName: string | null) =>
     putJson<SensorListItem>(`/sensor/${sensorId}/display-name`, { displayName }),
   getMoistureSeries: (params: string) => fetchJson<MoisturePoint[]>(`/chart/moisture?${params}`),

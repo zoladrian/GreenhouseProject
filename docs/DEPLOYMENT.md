@@ -37,6 +37,12 @@ Baza SQLite na wolumenie `greenhouse-data` (`/app/data/greenhouse.db`), tryb **W
 
 6. W przeglądarce (telefon w sieci Pi): `http://<adres_IP_malinki>:5000`
 
+## Czujniki w aplikacji
+
+- Odczyty trafiają z **Zigbee2MQTT** do **Mosquitto**; kontener **greenhouse-api** subskrybuje `zigbee2mqtt/#` i zapisuje tylko tematy **`zigbee2mqtt/<nazwa_przyjazna>`** z **JSON stanu** (pomijane są m.in. `.../availability`, `.../set`).
+- Zakładka **Sensory** pokazuje zarejestrowane czujniki; **Przypisanie do nawy** powoduje, że wilgotność i wykresy pojawiają się na **Dashboardzie** i w szczegółach nawy.
+- Grafiki marki: [`frontend/public/images/README.md`](../frontend/public/images/README.md) — domyślnie `kwiaty-polskie-hero.png` i `kwiaty-polskie-logo.png` (w repozytorium).
+
 ## Build z komputera (ARM64)
 
 ```bash

@@ -1,4 +1,8 @@
 import { NavLink, Outlet } from 'react-router-dom';
+import { BrandedImg } from './BrandedImg';
+
+const logoPng = '/images/kwiaty-polskie-logo.png';
+const logoFallback = '/images/kwiaty-polskie-logo.svg';
 
 const navItems = [
   { to: '/', label: 'Dashboard' },
@@ -11,9 +15,10 @@ export function Layout() {
   return (
     <div className="app-shell">
       <header className="app-header">
-        <img
+        <BrandedImg
           className="app-header__logo"
-          src="/images/kwiaty-polskie-logo.svg"
+          src={logoPng}
+          fallbackSrc={logoFallback}
           alt=""
           width={40}
           height={40}

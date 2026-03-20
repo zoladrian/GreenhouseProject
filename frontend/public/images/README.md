@@ -1,6 +1,9 @@
 # Grafiki marki
 
-- **`kwiaty-polskie-logo.svg`** — domyślne logo wektorowe (możesz zastąpić własnym PNG: `kwiaty-polskie-logo.png` i zaktualizować ścieżkę w `Layout.tsx` / `DashboardHero.tsx`).
-- **`kwiaty-polskie-greenhouse.svg`** — dekoracyjny baner (placeholder). Aby użyć zdjęcia szklarni, dodaj np. `kwiaty-polskie-greenhouse.jpg` (skompresowane, max ~1600px szerokości) i w `DashboardHero.tsx` zmień `heroImageSrc` na `/images/kwiaty-polskie-greenhouse.jpg`.
+Pliki w tym katalogu trafiają do `wwwroot` (Vite `public/`) i są dostępne pod `/images/...`.
 
-Wszystkie pliki w `public/images` są serwowane lokalnie (offline, bez CDN).
+- **`kwiaty-polskie-logo.png`** — logo marki (nagłówek + pas na dashboardzie). Przy braku pliku UI użyje `kwiaty-polskie-logo.svg`.
+- **`kwiaty-polskie-hero.png`** — zdjęcie baneru (ekspozycja / szklarnia). Przy braku pliku UI użyje `kwiaty-polskie-greenhouse.svg`.
+- Pliki `.svg` — lekkie placeholdery z repozytorium.
+
+Aby podmienić grafiki: zastąp powyższe PNG własnymi plikami **o tych samych nazwach** i zrób ponowny build frontu / obrazu Docker.

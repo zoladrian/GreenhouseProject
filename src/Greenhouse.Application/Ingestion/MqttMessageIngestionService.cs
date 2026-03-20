@@ -60,7 +60,14 @@ public sealed class MqttMessageIngestionService : IMqttMessageIngestionService
             return false;
         }
 
-        sensorIdentifier = topic[SensorTopicPrefix.Length..].Trim();
+        // Tylko zigbee2mqtt/<jedna_nazwa> — pełny JSON stanu. Pomija .../availability, .../set, tryb „attribute”.
+        var remainder = topic.AsSpan(SensorTopicPrefix.Length).Trim();
+        if (remainder.IsEmpty || remainder.Contains('/'))
+        {
+            return false;
+        }
+
+        sensorIdentifier = remainder.ToString();
         return !string.IsNullOrWhiteSpace(sensorIdentifier);
     }
 }

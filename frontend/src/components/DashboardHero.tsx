@@ -1,17 +1,19 @@
-/**
- * Baner: zdjęcie szklarni + pas z logo.
- * Aby użyć własnego JPG, dodaj plik do public/images i ustaw heroImageSrc poniżej.
- */
-const heroImageSrc = '/images/kwiaty-polskie-greenhouse.svg';
+import { BrandedImg } from './BrandedImg';
+
+const heroPng = '/images/kwiaty-polskie-hero.png';
+const heroFallback = '/images/kwiaty-polskie-greenhouse.svg';
+const logoPng = '/images/kwiaty-polskie-logo.png';
+const logoFallback = '/images/kwiaty-polskie-logo.svg';
 
 export function DashboardHero() {
   return (
     <section className="dashboard-hero" aria-labelledby="dashboard-hero-title">
       <div className="dashboard-hero__image-wrap">
-        <img
+        <BrandedImg
           className="dashboard-hero__image"
-          src={heroImageSrc}
-          alt="Szklarnia Kwiaty Polskie — widok ogrodowy"
+          src={heroPng}
+          fallbackSrc={heroFallback}
+          alt="Kwiaty Polskie — szklarnia i ekspozycja"
           width={800}
           height={320}
           decoding="async"
@@ -22,9 +24,10 @@ export function DashboardHero() {
         </p>
       </div>
       <div className="dashboard-hero__brand card-surface">
-        <img
+        <BrandedImg
           className="dashboard-hero__logo"
-          src="/images/kwiaty-polskie-logo.svg"
+          src={logoPng}
+          fallbackSrc={logoFallback}
           alt="Logo Kwiaty Polskie"
           width={72}
           height={72}

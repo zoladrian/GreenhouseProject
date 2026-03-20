@@ -26,6 +26,24 @@ public sealed class MqttMessageIngestionServiceTests
     }
 
     [Fact]
+    public async Task IngestAsync_ShouldIgnoreAvailabilitySubtopic()
+    {
+        var parser = new FakeParser(new ParsedSensorPayload(null, null, null, null));
+        var repository = new InMemoryReadingRepository();
+        var provisioning = new FixedProvisioning(Guid.Parse("33333333-3333-3333-3333-333333333333"));
+        var sut = new MqttMessageIngestionService(parser, repository, provisioning);
+
+        var message = new IncomingMqttMessage(
+            "zigbee2mqtt/czujnik1/availability",
+            "online",
+            DateTime.UtcNow);
+
+        await sut.IngestAsync(message, CancellationToken.None);
+
+        Assert.Empty(repository.Items);
+    }
+
+    [Fact]
     public async Task IngestAsync_ShouldIgnoreBridgeTopic()
     {
         var parser = new FakeParser(new ParsedSensorPayload(null, null, null, null));
