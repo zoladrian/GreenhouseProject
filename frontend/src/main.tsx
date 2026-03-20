@@ -1,8 +1,11 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
+import { startDeployVersionWatch } from './deployWatch';
 import './theme.css';
 import './index.css';
+
+startDeployVersionWatch();
 
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {

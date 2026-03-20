@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Greenhouse — panel (kiosk)
+Comment=Pełnoekranowy panel szklarni (localhost:5000)
+# Dostosuj ścieżkę do katalogu z repozytorium na Malince:
+Exec=/bin/bash /home/pi/GreenhouseProject/scripts/raspberry-pi/greenhouse-kiosk.sh
+Icon=applications-internet
+Terminal=false
+Categories=Network;
+X-GNOME-Autostart-enabled=true

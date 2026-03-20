@@ -48,6 +48,8 @@ services:
       - Logging__LogLevel__Microsoft.EntityFrameworkCore.Database.Command=Warning
       # Opcjonalnie: Voice__GreetingLeadin=Dzień dobry Panie Janie
       - Voice__TimeZoneId=Europe/Warsaw
+      # Opcjonalnie nadpisuje plik deploy-id z obrazu (zwykle nie ustawiaj — wtedy każdy build ma unikalny id i UI sam się odświeży).
+      # - GREENHOUSE_DEPLOY_ID=recznie-ustawiona-etykieta
     restart: unless-stopped
 
 volumes:

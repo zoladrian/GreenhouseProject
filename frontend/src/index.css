@@ -113,6 +113,35 @@ textarea {
   border-top-color: var(--color-brand-green);
 }
 
+.app-deploy-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 4px 12px 8px;
+  padding-bottom: calc(8px + env(safe-area-inset-bottom, 0));
+  font-size: 10px;
+  line-height: 1.3;
+  color: var(--color-text-muted);
+  background: var(--color-page-bg);
+  border-top: 1px dashed var(--color-border);
+}
+
+.app-deploy-bar__label {
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.85;
+}
+
+.app-deploy-bar__id {
+  font-family: ui-monospace, 'Cascadia Code', 'Consolas', monospace;
+  font-size: 10px;
+  word-break: break-all;
+  max-width: 100%;
+  text-align: center;
+}
+
 /* Dashboard hero */
 .dashboard-hero {
   margin: -4px -4px 16px;

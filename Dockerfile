@@ -22,6 +22,8 @@ WORKDIR /app
 
 COPY --from=backend-build /publish/api ./api/
 COPY --from=frontend-build /app/frontend/dist ./api/wwwroot/
+# Unikalny identyfikator przy każdym zbudowaniu obrazu — frontend porównuje z API i przeładowuje stronę po wdrożeniu nowej wersji.
+RUN sh -c 'printf "%s-%s" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$(tr -dc a-f0-9 </dev/urandom | head -c 8)" > /app/api/deploy-id'
 
 EXPOSE 5000
 ENV ASPNETCORE_URLS=http://+:5000

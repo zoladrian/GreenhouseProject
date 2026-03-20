@@ -1,0 +1,2 @@
+# Skrypty uruchamiane na Linuxie (np. Raspberry Pi) — spójne końce linii
+scripts/**/*.sh text eol=lf

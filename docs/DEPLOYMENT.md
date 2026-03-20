@@ -37,6 +37,45 @@ Baza SQLite na wolumenie `greenhouse-data` (`/app/data/greenhouse.db`), tryb **W
 
 6. W przeglądarce (telefon w sieci Pi): `http://<adres_IP_malinki>:5000`
 
+## Panel na ekranie podłączonym do Malinki
+
+Interfejs jest serwowany z kontenera **`greenhouse-api`** na porcie **5000** mapowanym na **host** (`5000:5000` w compose). Z samego systemu na Malince (monitor + Raspberry Pi OS **z pulpitem**) otwórz:
+
+- **`http://127.0.0.1:5000`** lub **`http://localhost:5000`**
+
+To ten sam frontend co z telefonu — bez dodatkowych kontenerów.
+
+### Pełny ekran (kiosk) po starcie
+
+1. Zainstaluj Chromium (Bookworm / nowsze często mają pakiet `chromium`):
+   ```bash
+   sudo apt update && sudo apt install -y chromium curl
+   ```
+2. Nadaj prawa wykonywania i test ręczny:
+   ```bash
+   cd /ścieżka/do/GreenhouseProject
+   chmod +x scripts/raspberry-pi/greenhouse-kiosk.sh scripts/raspberry-pi/install-kiosk-autostart.sh
+   ./scripts/raspberry-pi/greenhouse-kiosk.sh
+   ```
+   Skrypt **czeka**, aż `http://127.0.0.1:5000` odpowie (np. po `docker compose up -d`), potem uruchamia Chromium w trybie **kiosk** (z wyłączonym cache HTTP, żeby łatwiej łapać nowe assety).
+
+3. **Autostart po zalogowaniu na pulpit** (zalecane — systemd użytkownika):
+   ```bash
+   ./scripts/raspberry-pi/install-kiosk-autostart.sh
+   systemctl --user start greenhouse-kiosk.service
+   ```
+   Usługa startuje wraz z **sesją graficzną** (`graphical-session.target`). **Włącz automatyczne logowanie** użytkownika z pulpitem (np. *Raspberry Pi Configuration* / *raspi-config*) — inaczej po reboocie trzeba ręcznie się zalogować, żeby kiosk wystartował.
+
+   Alternatywa bez systemd: plik [`greenhouse-kiosk.desktop`](../scripts/raspberry-pi/greenhouse-kiosk.desktop) do `~/.config/autostart/` (popraw ścieżkę `Exec=`).
+
+### Aktualizacja kodu — odświeżenie panelu
+
+- Przy każdym **`docker compose build`** obraz dostaje **nowy** identyfikator wdrożenia (plik `deploy-id` w kontenerze).
+- Frontend w produkcji co ok. **45 s** wywołuje `GET /api/meta/deploy` i porównuje `deployId`. Gdy po **`docker compose up -d`** serwer zwraca **inny** identyfikator, strona robi **`location.reload()`** — bez ręcznego odświeżania na ekranie.
+- Na dole UI (pod nawigacją) wyświetla się pasek **„Wersja serwera”** z tym samym identyfikatorem (łatwo zobaczyć, czy wdrożenie doszło).
+
+**Wskazówki:** wyłączenie wygaszacza / blankowania ekranu: **Raspberry Pi Configuration** → **Display** lub ustawienia energii. Szczegóły: [`scripts/raspberry-pi/README.md`](../scripts/raspberry-pi/README.md).
+
 ## PWA — wygląd jak aplikacja (bez sklepu Play)
 
 Frontend ma [`manifest.json`](../frontend/public/manifest.json) (`display: standalone`), meta **Apple Web App** oraz minimalny **service worker** [`sw.js`](../frontend/public/sw.js) (rejestracja tylko w buildzie produkcyjnym).
@@ -80,6 +119,7 @@ Obecnie używane jest `EnsureCreated`. Po zmianie encji usuń plik `greenhouse.d
 | `Mqtt__TopicFilter` | Filtr subskrypcji (domyślnie `zigbee2mqtt/#`) |
 | `Voice__GreetingLeadin` | Początek wypowiedzi głosowej (np. „Dzień dobry Panie Czesławie”) |
 | `Voice__TimeZoneId` | Strefa do „północy” przy średnich dziennych (domyślnie `Europe/Warsaw`) |
+| `GREENHOUSE_DEPLOY_ID` | (Opcjonalnie) Nadpisuje identyfikator z obrazu; **zwykle nie ustawiaj** — wtedy każdy build Dockera ma unikalny `deploy-id` i panel sam się przeładuje po aktualizacji. |
 
 **Raport głosowy (offline):** na dashboardzie przycisk „Odczytaj dzienny raport” wywołuje `GET /api/voice/daily-report` — średnie wilgotności i temperatury z czujników przypisanych do nawy od **lokalnej północy** w `Voice:TimeZoneId`. Bez internetu — bez pogody z sieci.
 

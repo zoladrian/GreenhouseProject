@@ -1,3 +1,4 @@
+using Greenhouse.Api;
 using Greenhouse.Api.Contracts;
 using Greenhouse.Api.Mqtt;
 using Greenhouse.Application;
@@ -40,6 +41,8 @@ using (var scope = app.Services.CreateScope())
 app.UseCors();
 app.UseDefaultFiles();
 app.UseStaticFiles();
+
+app.MapGet("/api/meta/deploy", () => Results.Json(new { deployId = DeployInfo.DeployId }));
 
 // ─── Readings ──────────────────────────────────────────────
 app.MapGet("/api/readings/latest", async (int? count, GetLatestReadingsQueryService query, CancellationToken ct) =>
