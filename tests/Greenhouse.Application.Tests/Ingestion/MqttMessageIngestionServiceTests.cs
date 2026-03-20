@@ -101,6 +101,18 @@ public sealed class MqttMessageIngestionServiceTests
             Task.FromResult(new SensorEnsureResult(_id, CreatedNew: false));
     }
 
+    private sealed class CapturingProvisioning : ISensorProvisioningService
+    {
+        public string? LastExternalId { get; private set; }
+        private static readonly Guid Id = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+
+        public Task<SensorEnsureResult> EnsureSensorAsync(string mqttIdentifier, CancellationToken cancellationToken)
+        {
+            LastExternalId = mqttIdentifier;
+            return Task.FromResult(new SensorEnsureResult(Id, CreatedNew: false));
+        }
+    }
+
     private sealed class InMemoryReadingRepository : ISensorReadingRepository
     {
         public List<SensorReading> Items { get; } = [];

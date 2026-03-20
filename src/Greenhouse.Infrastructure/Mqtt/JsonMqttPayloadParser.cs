@@ -26,7 +26,8 @@ public sealed class JsonMqttPayloadParser : IMqttPayloadParser
                 TryGetDecimal(root, "soil_moisture"),
                 TryGetDecimal(root, "temperature"),
                 TryGetBatteryPercent(root, "battery"),
-                TryGetInt(root, "linkquality"));
+                TryGetInt(root, "linkquality"),
+                TryGetIeeeRaw(root));
         }
         catch (JsonException)
         {
@@ -83,5 +84,35 @@ public sealed class JsonMqttPayloadParser : IMqttPayloadParser
         }
 
         return null;
+    }
+
+    /// <summary>Wyciąga surowy IEEE z typowych pól Zigbee2MQTT (w tym <c>device</c> przy include_device_information).</summary>
+    private static string? TryGetIeeeRaw(JsonElement root)
+    {
+        if (TryGetStringProperty(root, "ieee_address", out var s))
+            return s;
+        if (TryGetStringProperty(root, "ieeeAddr", out s))
+            return s;
+
+        if (!root.TryGetProperty("device", out var device) || device.ValueKind != JsonValueKind.Object)
+            return null;
+
+        if (TryGetStringProperty(device, "ieee_address", out s))
+            return s;
+        if (TryGetStringProperty(device, "ieeeAddr", out s))
+            return s;
+
+        return null;
+    }
+
+    private static bool TryGetStringProperty(JsonElement obj, string name, out string value)
+    {
+        value = string.Empty;
+        if (!obj.TryGetProperty(name, out var el))
+            return false;
+        if (el.ValueKind != JsonValueKind.String)
+            return false;
+        value = el.GetString() ?? string.Empty;
+        return value.Length > 0;
     }
 }

@@ -27,6 +27,8 @@ services:
       # Ważne: w kontenerze „localhost” to NIE broker Mosquitto — musi być nazwa serwisu compose.
       # Nadpisuje błędne mqtt://localhost z pierwszego startu / starej konfiguracji.
       - ZIGBEE2MQTT_CONFIG_MQTT_SERVER=mqtt://mosquitto:1883
+      # Żeby w JSON stanu był obiekt device z ieee — aplikacja wtedy nie dublowe czujników po zmianie friendly name.
+      - ZIGBEE2MQTT_CONFIG_MQTT_INCLUDE_DEVICE_INFORMATION=true
       - ZIGBEE2MQTT_CONFIG_SERIAL_PORT=/dev/ttyUSBZigbee
       # Żeby UI było z sieci LAN (http://<IP>:8080) — onboarding często zapisuje frontend: false.
       - ZIGBEE2MQTT_CONFIG_FRONTEND_ENABLED=true

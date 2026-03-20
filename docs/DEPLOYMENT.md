@@ -94,7 +94,9 @@ Frontend ma [`manifest.json`](../frontend/public/manifest.json) (`display: stand
 ## Czujniki w aplikacji
 
 - Odczyty trafiają z **Zigbee2MQTT** do **Mosquitto**; kontener **greenhouse-api** subskrybuje `zigbee2mqtt/#` i zapisuje tylko tematy **`zigbee2mqtt/<nazwa_przyjazna>`** z **JSON stanu** (pomijane są m.in. `.../availability`, `.../set`).
+- **Adres IEEE w JSON:** po zmianie *friendly name* w Z2M zmienia się tylko **temat** MQTT — bez IEEE w payloadzie aplikacja traktowałaby urządzenie jako **nowy** czujnik (duplikaty). Aktualny `docker-compose` włącza **`mqtt.include_device_information`** w Z2M; API **preferuje IEEE** z pola `ieee_address` / `device.ieeeAddr` jako stabilny `ExternalId` (scalanie z wcześniejszym rekordem `0xffff…` z topicu).
 - Zakładka **Sensory** pokazuje zarejestrowane czujniki; **Przypisanie do nawy** powoduje, że wilgotność i wykresy pojawiają się na **Dashboardzie** i w szczegółach nawy.
+- **Stare duplikaty** (np. wpis po nazwie + wpis po IEEE) po wdrożeniu możesz zostawić lub usunąć ręcznie z bazy — aktywne odczyty będą spinać się z jednym rekordem po IEEE.
 - Grafiki marki: [`frontend/public/images/README.md`](../frontend/public/images/README.md) — domyślnie `kwiaty-polskie-hero.png` i `kwiaty-polskie-logo.png` (w repozytorium).
 
 ## Zigbee2MQTT — błąd `no such file ... /dev/ttyUSBZigbee`
@@ -212,6 +214,8 @@ Albo dla całego prefiksu:
 ```
 
 (Wiele logów — tylko na czas diagnozy.)
+
+**Dashboard (wilgotność wielu czujników, statusy Conflict / rozstrzał):** pełna linia na nawę jest na **Debug**; ostrzeżenia biznesowe na **Information** / **Warning**. Szczegóły: [**LOGGING.md**](LOGGING.md).
 
 ### Typowe przyczyny
 

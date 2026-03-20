@@ -3,6 +3,7 @@ using Greenhouse.Application.Nawy;
 using Greenhouse.Domain.Nawy;
 using Greenhouse.Domain.SensorReadings;
 using Greenhouse.Domain.Sensors;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Greenhouse.Application.Tests.Dashboard;
 
@@ -18,12 +19,13 @@ public sealed class GetDashboardQueryServiceTests
         var nawa = Nawa.Create("Nawa A", null);
         await nawaRepo.AddAsync(nawa, CancellationToken.None);
 
-        var sut = new GetDashboardQueryService(nawaRepo, sensorRepo, readingRepo);
+        var sut = new GetDashboardQueryService(nawaRepo, sensorRepo, readingRepo, NullLogger<GetDashboardQueryService>.Instance);
         var result = await sut.ExecuteAsync(CancellationToken.None);
 
         Assert.Single(result);
         Assert.Equal(OperatorStatus.NoData, result[0].Status);
         Assert.Equal(0, result[0].SensorCount);
+        Assert.Equal(0, result[0].MoistureReadingCount);
     }
 
     [Fact]
@@ -47,16 +49,47 @@ public sealed class GetDashboardQueryServiceTests
         readingRepo.Add(SensorReading.Create("sensor-1", DateTime.UtcNow.AddMinutes(-5), "t", "{}", 40m, 22m, 95, 100, sensor1.Id));
         readingRepo.Add(SensorReading.Create("sensor-2", DateTime.UtcNow.AddMinutes(-3), "t", "{}", 60m, 24m, 80, 120, sensor2.Id));
 
-        var sut = new GetDashboardQueryService(nawaRepo, sensorRepo, readingRepo);
+        var sut = new GetDashboardQueryService(nawaRepo, sensorRepo, readingRepo, NullLogger<GetDashboardQueryService>.Instance);
         var result = await sut.ExecuteAsync(CancellationToken.None);
 
         Assert.Single(result);
         var snapshot = result[0];
         Assert.Equal(2, snapshot.SensorCount);
+        Assert.Equal(2, snapshot.MoistureReadingCount);
         Assert.Equal(50m, snapshot.AvgMoisture);
         Assert.Equal(40m, snapshot.MinMoisture);
         Assert.Equal(60m, snapshot.MaxMoisture);
+        Assert.Equal(20m, snapshot.MoistureSpread);
         Assert.Equal(80, snapshot.LowestBattery);
+    }
+
+    [Fact]
+    public async Task Dashboard_ShouldReturnConflict_WhenMinDryAndMaxWet()
+    {
+        var nawaRepo = new InMemoryNawaRepo();
+        var sensorRepo = new InMemorySensorRepo();
+        var readingRepo = new InMemoryReadingRepo();
+
+        var nawa = Nawa.Create("Nawa C", null);
+        nawa.UpdateMoistureThresholds(30m, 70m);
+        await nawaRepo.AddAsync(nawa, CancellationToken.None);
+
+        var sensor1 = Sensor.Register("s-a");
+        sensor1.AssignToNawa(nawa.Id);
+        await sensorRepo.AddAsync(sensor1, CancellationToken.None);
+        var sensor2 = Sensor.Register("s-b");
+        sensor2.AssignToNawa(nawa.Id);
+        await sensorRepo.AddAsync(sensor2, CancellationToken.None);
+
+        readingRepo.Add(SensorReading.Create("s-a", DateTime.UtcNow.AddMinutes(-5), "t", "{}", 10m, 22m, 95, 100, sensor1.Id));
+        readingRepo.Add(SensorReading.Create("s-b", DateTime.UtcNow.AddMinutes(-3), "t", "{}", 85m, 22m, 95, 100, sensor2.Id));
+
+        var sut = new GetDashboardQueryService(nawaRepo, sensorRepo, readingRepo, NullLogger<GetDashboardQueryService>.Instance);
+        var result = await sut.ExecuteAsync(CancellationToken.None);
+
+        Assert.Single(result);
+        Assert.Equal(OperatorStatus.Conflict, result[0].Status);
+        Assert.Equal(75m, result[0].MoistureSpread);
     }
 
     private sealed class InMemoryNawaRepo : INawaRepository

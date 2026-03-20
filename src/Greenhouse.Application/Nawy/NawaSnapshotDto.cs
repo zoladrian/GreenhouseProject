@@ -8,9 +8,13 @@ public sealed record NawaSnapshotDto(
     string? PlantNote,
     OperatorStatus Status,
     int SensorCount,
+    /// <summary>Liczba czujników z ostatnim odczytem wilgotności (do agregacji min/max).</summary>
+    int MoistureReadingCount,
     decimal? AvgMoisture,
     decimal? MinMoisture,
     decimal? MaxMoisture,
+    /// <summary>Max − min wilgotności (%); null jeśli &lt; 2 odczytów.</summary>
+    decimal? MoistureSpread,
     decimal? AvgTemperature,
     int? LowestBattery,
     DateTime? OldestReadingUtc,

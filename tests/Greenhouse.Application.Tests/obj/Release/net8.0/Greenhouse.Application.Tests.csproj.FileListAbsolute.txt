@@ -106,3 +106,4 @@ C:\Users\Gigabyte\source\repos\GreenhouseProject\tests\Greenhouse.Application.Te
 C:\Users\Gigabyte\source\repos\GreenhouseProject\tests\Greenhouse.Application.Tests\obj\Release\net8.0\ref\Greenhouse.Application.Tests.dll
 C:\Users\Gigabyte\source\repos\GreenhouseProject\tests\Greenhouse.Application.Tests\bin\Release\net8.0\Microsoft.Extensions.Options.dll
 C:\Users\Gigabyte\source\repos\GreenhouseProject\tests\Greenhouse.Application.Tests\bin\Release\net8.0\Microsoft.Extensions.Primitives.dll
+C:\Users\Gigabyte\source\repos\GreenhouseProject\tests\Greenhouse.Application.Tests\bin\Release\net8.0\Microsoft.Extensions.Logging.Abstractions.dll

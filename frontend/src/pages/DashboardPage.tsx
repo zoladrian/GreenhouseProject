@@ -26,6 +26,18 @@ export function DashboardPage() {
     if (dry.length > 0) {
       tts.speak(`Uwaga! ${dry.length} naw wymaga podlania: ${dry.map((s) => s.nawaName).join(', ')}`);
     }
+    const conflict = data.filter((s) => s.status === 4);
+    if (conflict.length > 0) {
+      tts.speak(
+        `Uwaga! Sprzeczne odczyty wilgotności w ${conflict.length} nawach: ${conflict.map((s) => s.nawaName).join(', ')}. Sprawdź czujniki.`,
+      );
+    }
+    const uneven = data.filter((s) => s.status === 5);
+    if (uneven.length > 0) {
+      tts.speak(
+        `Informacja: duży rozstrzał między czujnikami w: ${uneven.map((s) => s.nawaName).join(', ')}.`,
+      );
+    }
   }, [data, tts]);
 
   if (loading) return <p className="text-muted">Ładowanie...</p>;
@@ -124,7 +136,16 @@ function NawaCard({ snap, onClick }: { snap: NawaSnapshot; onClick: () => void }
         <div>
           💧 {snap.avgMoisture !== null ? `${snap.avgMoisture}%` : '—'}
           {snap.minMoisture !== null && snap.maxMoisture !== null && (
-            <span style={{ fontSize: 11, opacity: 0.85 }}> ({snap.minMoisture}–{snap.maxMoisture})</span>
+            <span style={{ fontSize: 11, opacity: 0.85 }} title="min–max (najsuchszy / najmokrzejszy punkt)">
+              {' '}
+              ({snap.minMoisture}–{snap.maxMoisture}
+              {snap.moistureSpread != null && snap.sensorCount > 1 ? `, Δ${snap.moistureSpread}` : ''})
+            </span>
+          )}
+          {snap.sensorCount > 0 && snap.moistureReadingCount < snap.sensorCount && (
+            <span style={{ fontSize: 10, color: '#b45309', marginLeft: 4 }} title="Część czujników bez odczytu wilgotności">
+              ({snap.moistureReadingCount}/{snap.sensorCount} z wilg.)
+            </span>
           )}
         </div>
         <div>🌡️ {snap.avgTemperature !== null ? `${snap.avgTemperature}°C` : '—'}</div>

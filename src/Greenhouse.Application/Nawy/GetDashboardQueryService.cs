@@ -1,5 +1,6 @@
 using Greenhouse.Application.Abstractions;
 using Greenhouse.Domain.Nawy;
+using Microsoft.Extensions.Logging;
 
 namespace Greenhouse.Application.Nawy;
 
@@ -8,15 +9,18 @@ public sealed class GetDashboardQueryService
     private readonly INawaRepository _nawy;
     private readonly ISensorRepository _sensors;
     private readonly ISensorReadingRepository _readings;
+    private readonly ILogger<GetDashboardQueryService> _logger;
 
     public GetDashboardQueryService(
         INawaRepository nawy,
         ISensorRepository sensors,
-        ISensorReadingRepository readings)
+        ISensorReadingRepository readings,
+        ILogger<GetDashboardQueryService> logger)
     {
         _nawy = nawy;
         _sensors = sensors;
         _readings = readings;
+        _logger = logger;
     }
 
     public async Task<IReadOnlyList<NawaSnapshotDto>> ExecuteAsync(CancellationToken cancellationToken)
@@ -45,6 +49,7 @@ public sealed class GetDashboardQueryService
                 .Select(r => r.SoilMoisture!.Value)
                 .ToList();
 
+            var moistureReadingCount = moistures.Count;
             var temperatures = latestReadings
                 .Where(r => r.Temperature.HasValue)
                 .Select(r => r.Temperature!.Value)
@@ -58,32 +63,81 @@ public sealed class GetDashboardQueryService
             var avgMoisture = moistures.Count > 0 ? Math.Round(moistures.Average(), 2) : (decimal?)null;
             var minMoisture = moistures.Count > 0 ? moistures.Min() : (decimal?)null;
             var maxMoisture = moistures.Count > 0 ? moistures.Max() : (decimal?)null;
+            var moistureSpread = moistures.Count >= 2 && minMoisture.HasValue && maxMoisture.HasValue
+                ? Math.Round(maxMoisture.Value - minMoisture.Value, 2)
+                : (decimal?)null;
             var avgTemp = temperatures.Count > 0 ? Math.Round(temperatures.Average(), 2) : (decimal?)null;
             var lowestBattery = batteries.Count > 0 ? batteries.Min() : (int?)null;
             var oldestReading = latestReadings.Count > 0
                 ? latestReadings.Min(r => r.ReceivedAtUtc)
                 : (DateTime?)null;
 
+            var thresholds = nawa.GetMoistureThresholds();
             var status = OperatorStatusCalculator.Calculate(
                 sensorIds.Count,
-                avgMoisture,
+                moistureReadingCount,
+                minMoisture,
+                maxMoisture,
                 oldestReading,
-                nawa.GetMoistureThresholds(),
+                thresholds,
                 utcNow);
+
+            LogNawaSnapshot(nawa.Name, nawa.Id, status, sensorIds.Count, moistureReadingCount, minMoisture, maxMoisture, moistureSpread, thresholds);
 
             snapshots.Add(new NawaSnapshotDto(
                 nawa.Id, nawa.Name, nawa.PlantNote,
-                status, sensorIds.Count,
-                avgMoisture, minMoisture, maxMoisture, avgTemp,
+                status, sensorIds.Count, moistureReadingCount,
+                avgMoisture, minMoisture, maxMoisture, moistureSpread, avgTemp,
                 lowestBattery, oldestReading, utcNow));
         }
 
         return snapshots;
     }
 
+    private void LogNawaSnapshot(
+        string nawaName,
+        Guid nawaId,
+        OperatorStatus status,
+        int assignedSensors,
+        int moistureReadings,
+        decimal? minM,
+        decimal? maxM,
+        decimal? spread,
+        MoistureThresholds th)
+    {
+        _logger.LogDebug(
+            "Dashboard nawa={NawaName} ({NawaId}): status={Status}, czujniki={Assigned}, zWilgotnoscia={MoistureN}, min={Min}, max={Max}, rozstrzal={Spread}, progi min={ThMin} max={ThMax}",
+            nawaName, nawaId, status, assignedSensors, moistureReadings, minM, maxM, spread, th.Min, th.Max);
+
+        if (status == OperatorStatus.Conflict)
+        {
+            _logger.LogWarning(
+                "Nawa {NawaName} ({NawaId}): sprzeczne odczyty wilgotności (min={Min} max={Max}) względem progów min={ThMin} max={ThMax}",
+                nawaName, nawaId, minM, maxM, th.Min, th.Max);
+        }
+        else if (status == OperatorStatus.UnevenMoisture)
+        {
+            _logger.LogInformation(
+                "Nawa {NawaName} ({NawaId}): duży rozstrzał czujników rozstrzal={Spread}% (min={Min} max={Max})",
+                nawaName, nawaId, spread, minM, maxM);
+        }
+        else if (status == OperatorStatus.Dry)
+        {
+            _logger.LogInformation(
+                "Nawa {NawaName} ({NawaId}): sucho (najniższy odczyt min={Min}, próg podlania={ThMin})",
+                nawaName, nawaId, minM, th.Min);
+        }
+        else if (status == OperatorStatus.Warning)
+        {
+            _logger.LogInformation(
+                "Nawa {NawaName} ({NawaId}): za mokro (najwyższy odczyt max={Max}, próg={ThMax})",
+                nawaName, nawaId, maxM, th.Max);
+        }
+    }
+
     private static NawaSnapshotDto BuildEmptySnapshot(Nawa nawa, DateTime utcNow) =>
         new(nawa.Id, nawa.Name, nawa.PlantNote,
-            OperatorStatus.NoData, 0,
-            null, null, null, null,
+            OperatorStatus.NoData, 0, 0,
+            null, null, null, null, null,
             null, null, utcNow);
 }

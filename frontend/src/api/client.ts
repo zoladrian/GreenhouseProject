@@ -30,11 +30,14 @@ export interface NawaSnapshot {
   nawaId: string;
   nawaName: string;
   plantNote: string | null;
+  /** 0 Ok, 1 Uwaga (za mokro), 2 Sucho, 3 Brak danych, 4 Sprzeczne czujniki, 5 Rozstrzał czujników */
   status: number;
   sensorCount: number;
+  moistureReadingCount: number;
   avgMoisture: number | null;
   minMoisture: number | null;
   maxMoisture: number | null;
+  moistureSpread: number | null;
   avgTemperature: number | null;
   lowestBattery: number | null;
   oldestReadingUtc: string | null;

@@ -40,6 +40,10 @@ public sealed class MqttMessageIngestionService : IMqttMessageIngestionService
 
         var parsed = _payloadParser.ParseSensorPayload(message.Payload);
 
+        var externalId = ZigbeeIeeeAddress.TryNormalize(parsed.IeeeAddress, out var ieeeNorm)
+            ? ieeeNorm
+            : sensorIdentifier;
+
         var hasMetric = parsed.SoilMoisture.HasValue || parsed.Temperature.HasValue || parsed.Battery.HasValue ||
                         parsed.LinkQuality.HasValue;
         var payloadTrim = message.Payload.TrimStart();
@@ -48,11 +52,11 @@ public sealed class MqttMessageIngestionService : IMqttMessageIngestionService
             _logger.LogDebug(
                 "MQTT topic={Topic}, czujnik={Sensor}: JSON bez pól soil_moisture/temperature/battery/linkquality (tryb attribute w Z2M?). Fragment={Snippet}",
                 message.Topic,
-                sensorIdentifier,
+                externalId,
                 Snippet(message.Payload, 160));
         }
 
-        var ensured = await _sensorProvisioning.EnsureSensorAsync(sensorIdentifier, cancellationToken);
+        var ensured = await _sensorProvisioning.EnsureSensorAsync(externalId, cancellationToken);
         if (ensured.CreatedNew)
         {
             _logger.LogInformation(
@@ -77,7 +81,7 @@ public sealed class MqttMessageIngestionService : IMqttMessageIngestionService
 
         _logger.LogTrace(
             "MQTT zapis odczytu ExternalId={ExternalId}, wilgotność={M}, temp={T}, bateria={B}, LQ={Lq}",
-            sensorIdentifier,
+            externalId,
             parsed.SoilMoisture,
             parsed.Temperature,
             parsed.Battery,

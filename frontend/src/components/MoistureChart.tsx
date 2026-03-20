@@ -5,16 +5,44 @@ interface Props {
   points: MoisturePoint[];
   wateringEvents?: WateringEventDto[];
   title?: string;
+  /** Poniżej — strefa „podlej”; na wykresie jako linia pomarańczowa. */
+  moistureMin?: number | null;
+  /** Powyżej — strefa „za mokro”; niebieska linia. */
+  moistureMax?: number | null;
 }
 
-export function MoistureChart({ points, wateringEvents = [], title }: Props) {
+export function MoistureChart({ points, wateringEvents = [], title, moistureMin, moistureMax }: Props) {
   if (points.length === 0) {
     return <p style={{ color: '#9ca3af', textAlign: 'center' }}>Brak danych do wykresu</p>;
   }
 
   const sensors = [...new Set(points.map((p) => p.sensorIdentifier))];
 
-  const series = sensors.map((name) => ({
+  const thresholdLines =
+    moistureMin != null || moistureMax != null
+      ? [
+          ...(moistureMin != null
+            ? [
+                {
+                  yAxis: moistureMin,
+                  lineStyle: { color: '#d97706', type: 'dashed' as const, width: 2 },
+                  label: { formatter: `Podlej (≤ ${moistureMin}%)`, position: 'insideEndTop' as const },
+                },
+              ]
+            : []),
+          ...(moistureMax != null
+            ? [
+                {
+                  yAxis: moistureMax,
+                  lineStyle: { color: '#2563eb', type: 'dashed' as const, width: 2 },
+                  label: { formatter: `Za mokro (≥ ${moistureMax}%)`, position: 'insideEndBottom' as const },
+                },
+              ]
+            : []),
+        ]
+      : [];
+
+  const series = sensors.map((name, idx) => ({
     name,
     type: 'line' as const,
     smooth: true,
@@ -22,6 +50,10 @@ export function MoistureChart({ points, wateringEvents = [], title }: Props) {
     data: points
       .filter((p) => p.sensorIdentifier === name && p.soilMoisture !== null)
       .map((p) => [p.utcTime, p.soilMoisture]),
+    markLine:
+      idx === 0 && thresholdLines.length > 0
+        ? { symbol: 'none', data: thresholdLines, silent: true }
+        : undefined,
   }));
 
   if (wateringEvents.length > 0) {
@@ -31,6 +63,7 @@ export function MoistureChart({ points, wateringEvents = [], title }: Props) {
       smooth: false,
       symbol: 'diamond',
       data: wateringEvents.map((e) => [e.detectedAtUtc, e.moistureAfter]),
+      markLine: undefined,
     });
   }
 
