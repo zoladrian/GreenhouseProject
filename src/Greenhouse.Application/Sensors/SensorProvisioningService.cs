@@ -12,16 +12,16 @@ public sealed class SensorProvisioningService : ISensorProvisioningService
         _sensors = sensors;
     }
 
-    public async Task<Guid> EnsureSensorAsync(string mqttIdentifier, CancellationToken cancellationToken)
+    public async Task<SensorEnsureResult> EnsureSensorAsync(string mqttIdentifier, CancellationToken cancellationToken)
     {
         var existing = await _sensors.GetByExternalIdAsync(mqttIdentifier, cancellationToken);
         if (existing is not null)
         {
-            return existing.Id;
+            return new SensorEnsureResult(existing.Id, CreatedNew: false);
         }
 
         var sensor = Sensor.Register(mqttIdentifier);
         await _sensors.AddAsync(sensor, cancellationToken);
-        return sensor.Id;
+        return new SensorEnsureResult(sensor.Id, CreatedNew: true);
     }
 }

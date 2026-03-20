@@ -1,10 +1,11 @@
 {
   "version": 2,
-  "dgSpecHash": "rzhl4YMPGgI=",
+  "dgSpecHash": "V3PSILtk5rA=",
   "success": true,
   "projectFilePath": "C:\\Users\\Gigabyte\\source\\repos\\GreenhouseProject\\src\\Greenhouse.Application\\Greenhouse.Application.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\Gigabyte\\.nuget\\packages\\microsoft.extensions.dependencyinjection.abstractions\\8.0.2\\microsoft.extensions.dependencyinjection.abstractions.8.0.2.nupkg.sha512",
+    "C:\\Users\\Gigabyte\\.nuget\\packages\\microsoft.extensions.logging.abstractions\\8.0.2\\microsoft.extensions.logging.abstractions.8.0.2.nupkg.sha512",
     "C:\\Users\\Gigabyte\\.nuget\\packages\\microsoft.extensions.options\\8.0.2\\microsoft.extensions.options.8.0.2.nupkg.sha512",
     "C:\\Users\\Gigabyte\\.nuget\\packages\\microsoft.extensions.primitives\\8.0.0\\microsoft.extensions.primitives.8.0.0.nupkg.sha512"
   ],

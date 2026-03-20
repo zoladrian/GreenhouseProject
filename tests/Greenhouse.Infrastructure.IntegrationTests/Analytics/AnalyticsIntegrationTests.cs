@@ -118,7 +118,12 @@ public sealed class AnalyticsIntegrationTests : IDisposable
 
         var provisioning = new SensorProvisioningService(sensorRepo);
         var parser = new JsonMqttPayloadParser();
-        var ingestion = new MqttMessageIngestionService(parser, readingRepo, provisioning);
+        var ingestion = new MqttMessageIngestionService(
+            parser,
+            readingRepo,
+            provisioning,
+            Microsoft.Extensions.Logging.Abstractions.NullLogger<MqttMessageIngestionService>.Instance,
+            new MqttIngestTelemetry());
 
         foreach (var (time, moisture) in sensorData.readings)
         {

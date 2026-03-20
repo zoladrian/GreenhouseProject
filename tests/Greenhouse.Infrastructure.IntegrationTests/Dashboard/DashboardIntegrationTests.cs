@@ -37,7 +37,12 @@ public sealed class DashboardIntegrationTests : IDisposable
 
         var provisioning = new SensorProvisioningService(sensorRepo);
         var parser = new JsonMqttPayloadParser();
-        var ingestion = new MqttMessageIngestionService(parser, readingRepo, provisioning);
+        var ingestion = new MqttMessageIngestionService(
+            parser,
+            readingRepo,
+            provisioning,
+            Microsoft.Extensions.Logging.Abstractions.NullLogger<MqttMessageIngestionService>.Instance,
+            new MqttIngestTelemetry());
 
         await ingestion.IngestAsync(new IncomingMqttMessage(
             "zigbee2mqtt/czujnik1",
@@ -71,7 +76,12 @@ public sealed class DashboardIntegrationTests : IDisposable
         var readingRepo = new EfSensorReadingRepository(_db);
         var provisioning = new SensorProvisioningService(sensorRepo);
         var parser = new JsonMqttPayloadParser();
-        var ingestion = new MqttMessageIngestionService(parser, readingRepo, provisioning);
+        var ingestion = new MqttMessageIngestionService(
+            parser,
+            readingRepo,
+            provisioning,
+            Microsoft.Extensions.Logging.Abstractions.NullLogger<MqttMessageIngestionService>.Instance,
+            new MqttIngestTelemetry());
 
         await ingestion.IngestAsync(new IncomingMqttMessage(
             "zigbee2mqtt/sensor-health-test",

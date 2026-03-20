@@ -1,9 +1,30 @@
 {
+  "id": "/",
   "name": "Kwiaty Polskie — Szklarnia",
   "short_name": "Szklarnia",
+  "description": "Monitoring wilgotności gleby i naw w szklarni (offline / sieć lokalna).",
+  "lang": "pl",
+  "dir": "ltr",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui", "browser"],
+  "orientation": "portrait-primary",
   "background_color": "#f4faf5",
-  "theme_color": "#45a249",
-  "icons": []
+  "theme_color": "#2d6a32",
+  "categories": ["utilities", "lifestyle"],
+  "icons": [
+    {
+      "src": "/images/kwiaty-polskie-logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/images/kwiaty-polskie-logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
 }

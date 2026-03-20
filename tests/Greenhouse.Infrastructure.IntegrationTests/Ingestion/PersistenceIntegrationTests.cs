@@ -27,7 +27,12 @@ public sealed class PersistenceIntegrationTests
         ISensorRepository sensorRepository = new EfSensorRepository(dbContext);
         var provisioning = new SensorProvisioningService(sensorRepository);
         IMqttPayloadParser parser = new JsonMqttPayloadParser();
-        var service = new MqttMessageIngestionService(parser, repository, provisioning);
+        var service = new MqttMessageIngestionService(
+            parser,
+            repository,
+            provisioning,
+            Microsoft.Extensions.Logging.Abstractions.NullLogger<MqttMessageIngestionService>.Instance,
+            new MqttIngestTelemetry());
 
         var message = new IncomingMqttMessage(
             "zigbee2mqtt/Czujnik wilgotnosci 2",

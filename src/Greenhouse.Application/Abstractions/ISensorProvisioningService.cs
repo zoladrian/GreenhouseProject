@@ -5,5 +5,5 @@ namespace Greenhouse.Application.Abstractions;
 /// </summary>
 public interface ISensorProvisioningService
 {
-    Task<Guid> EnsureSensorAsync(string mqttIdentifier, CancellationToken cancellationToken);
+    Task<SensorEnsureResult> EnsureSensorAsync(string mqttIdentifier, CancellationToken cancellationToken);
 }

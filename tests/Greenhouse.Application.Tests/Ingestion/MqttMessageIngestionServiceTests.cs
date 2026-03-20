@@ -12,7 +12,12 @@ public sealed class MqttMessageIngestionServiceTests
         var parser = new FakeParser(new ParsedSensorPayload(10m, 21.2m, 99, 200));
         var repository = new InMemoryReadingRepository();
         var provisioning = new FixedProvisioning(Guid.Parse("11111111-1111-1111-1111-111111111111"));
-        var sut = new MqttMessageIngestionService(parser, repository, provisioning);
+        var sut = new MqttMessageIngestionService(
+            parser,
+            repository,
+            provisioning,
+            Microsoft.Extensions.Logging.Abstractions.NullLogger<MqttMessageIngestionService>.Instance,
+            new MqttIngestTelemetry());
 
         var message = new IncomingMqttMessage(
             "zigbee2mqtt/Czujnik wilgotnosci 1",
@@ -31,7 +36,12 @@ public sealed class MqttMessageIngestionServiceTests
         var parser = new FakeParser(new ParsedSensorPayload(null, null, null, null));
         var repository = new InMemoryReadingRepository();
         var provisioning = new FixedProvisioning(Guid.Parse("33333333-3333-3333-3333-333333333333"));
-        var sut = new MqttMessageIngestionService(parser, repository, provisioning);
+        var sut = new MqttMessageIngestionService(
+            parser,
+            repository,
+            provisioning,
+            Microsoft.Extensions.Logging.Abstractions.NullLogger<MqttMessageIngestionService>.Instance,
+            new MqttIngestTelemetry());
 
         var message = new IncomingMqttMessage(
             "zigbee2mqtt/czujnik1/availability",
@@ -49,7 +59,12 @@ public sealed class MqttMessageIngestionServiceTests
         var parser = new FakeParser(new ParsedSensorPayload(null, null, null, null));
         var repository = new InMemoryReadingRepository();
         var provisioning = new FixedProvisioning(Guid.Parse("22222222-2222-2222-2222-222222222222"));
-        var sut = new MqttMessageIngestionService(parser, repository, provisioning);
+        var sut = new MqttMessageIngestionService(
+            parser,
+            repository,
+            provisioning,
+            Microsoft.Extensions.Logging.Abstractions.NullLogger<MqttMessageIngestionService>.Instance,
+            new MqttIngestTelemetry());
 
         var message = new IncomingMqttMessage(
             "zigbee2mqtt/bridge/health",
@@ -82,8 +97,8 @@ public sealed class MqttMessageIngestionServiceTests
             _id = id;
         }
 
-        public Task<Guid> EnsureSensorAsync(string mqttIdentifier, CancellationToken cancellationToken) =>
-            Task.FromResult(_id);
+        public Task<SensorEnsureResult> EnsureSensorAsync(string mqttIdentifier, CancellationToken cancellationToken) =>
+            Task.FromResult(new SensorEnsureResult(_id, CreatedNew: false));
     }
 
     private sealed class InMemoryReadingRepository : ISensorReadingRepository

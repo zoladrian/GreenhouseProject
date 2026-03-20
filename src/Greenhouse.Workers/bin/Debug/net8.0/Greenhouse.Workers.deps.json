@@ -647,7 +647,9 @@
       "Greenhouse.Application/1.0.0": {
         "dependencies": {
           "Greenhouse.Domain": "1.0.0",
-          "Microsoft.Extensions.DependencyInjection.Abstractions": "8.0.2"
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "8.0.2",
+          "Microsoft.Extensions.Logging.Abstractions": "8.0.2",
+          "Microsoft.Extensions.Options": "8.0.2"
         },
         "runtime": {
           "Greenhouse.Application.dll": {
