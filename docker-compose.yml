@@ -28,6 +28,9 @@ services:
       # Nadpisuje błędne mqtt://localhost z pierwszego startu / starej konfiguracji.
       - ZIGBEE2MQTT_CONFIG_MQTT_SERVER=mqtt://mosquitto:1883
       - ZIGBEE2MQTT_CONFIG_SERIAL_PORT=/dev/ttyUSBZigbee
+      # Żeby UI było z sieci LAN (http://<IP>:8080) — onboarding często zapisuje frontend: false.
+      - ZIGBEE2MQTT_CONFIG_FRONTEND_ENABLED=true
+      - ZIGBEE2MQTT_CONFIG_FRONTEND_PORT=8080
     restart: unless-stopped
 
   greenhouse-api:

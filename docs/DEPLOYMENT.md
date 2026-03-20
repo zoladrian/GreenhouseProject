@@ -30,7 +30,7 @@ Baza SQLite na wolumenie `greenhouse-data` (`/app/data/greenhouse.db`), tryb **W
    ```
    Domyślnie compose używa **`/dev/ttyACM0`** → w kontenerze zawsze **`/dev/ttyUSBZigbee`** (tak powinno być w `configuration.yaml` Zigbee2MQTT: `serial.port: /dev/ttyUSBZigbee`).
 
-4. **Zigbee2MQTT**: pierwszy start tworzy dane w wolumenie `zigbee2mqtt-data`. W `docker-compose.yml` ustawione są zmienne **`ZIGBEE2MQTT_CONFIG_MQTT_SERVER`** i **`ZIGBEE2MQTT_CONFIG_SERIAL_PORT`**, żeby Z2M łączył się z brokerem **`mosquitto`** (nie `localhost` w kontenerze) i z donglem **`/dev/ttyUSBZigbee`** w kontenerze. Interfejs web: **`http://<IP_malinki>:8080`** (port **8080** jest mapowany na host).
+4. **Zigbee2MQTT**: pierwszy start tworzy dane w wolumenie `zigbee2mqtt-data`. W `docker-compose.yml` są m.in. **`ZIGBEE2MQTT_CONFIG_MQTT_SERVER`**, **`ZIGBEE2MQTT_CONFIG_SERIAL_PORT`** oraz **`ZIGBEE2MQTT_CONFIG_FRONTEND_ENABLED=true`** (bez tego po onboardingu UI bywa wyłączone i z komputera widać **ERR_CONNECTION_REFUSED** na `:8080` mimo mapowania portu). Interfejs: **`http://<IP_malinki>:8080`**.
 
 5. Build i start:
    ```bash
