@@ -23,4 +23,15 @@ public static class ZigbeeIeeeAddress
         normalized = "0x" + hex.ToLowerInvariant();
         return true;
     }
+
+    /// <summary>
+    /// Czy <paramref name="externalId"/> jest już zapisanym, znormalizowanym adresem IEEE (jak w <see cref="TryNormalize"/>).
+    /// </summary>
+    public static bool IsCanonicalStoredExternalId(string? externalId)
+    {
+        if (!TryNormalize(externalId, out var normalized))
+            return false;
+
+        return string.Equals(normalized, externalId!.Trim(), StringComparison.OrdinalIgnoreCase);
+    }
 }

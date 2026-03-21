@@ -30,14 +30,14 @@ public sealed class DashboardIntegrationTests : IDisposable
     {
         var nawaRepo = new EfNawaRepository(_db);
         var sensorRepo = new EfSensorRepository(_db);
-        var readingRepo = new EfSensorReadingRepository(_db);
+        var parser = new JsonMqttPayloadParser();
+        var readingRepo = new EfSensorReadingRepository(_db, parser);
 
         var nawa = Nawa.Create("Nawa integration", null);
         nawa.UpdateMoistureThresholds(10m, 90m);
         await nawaRepo.AddAsync(nawa, CancellationToken.None);
 
-        var provisioning = new SensorProvisioningService(sensorRepo);
-        var parser = new JsonMqttPayloadParser();
+        var provisioning = new SensorProvisioningService(sensorRepo, readingRepo);
         var ingestion = new MqttMessageIngestionService(
             parser,
             readingRepo,
@@ -74,9 +74,9 @@ public sealed class DashboardIntegrationTests : IDisposable
     public async Task SensorHealth_ReturnsData()
     {
         var sensorRepo = new EfSensorRepository(_db);
-        var readingRepo = new EfSensorReadingRepository(_db);
-        var provisioning = new SensorProvisioningService(sensorRepo);
         var parser = new JsonMqttPayloadParser();
+        var readingRepo = new EfSensorReadingRepository(_db, parser);
+        var provisioning = new SensorProvisioningService(sensorRepo, readingRepo);
         var ingestion = new MqttMessageIngestionService(
             parser,
             readingRepo,

@@ -24,6 +24,12 @@ public sealed class EfSensorRepository : ISensorRepository
             .SingleOrDefaultAsync(x => x.ExternalId == externalId, cancellationToken);
     }
 
+    public async Task<Sensor?> GetByExternalIdForUpdateAsync(string externalId, CancellationToken cancellationToken)
+    {
+        return await _dbContext.Sensors
+            .SingleOrDefaultAsync(x => x.ExternalId == externalId, cancellationToken);
+    }
+
     public async Task<IReadOnlyList<Sensor>> ListAsync(CancellationToken cancellationToken)
     {
         return await _dbContext.Sensors.AsNoTracking().ToListAsync(cancellationToken);

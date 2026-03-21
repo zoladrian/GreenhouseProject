@@ -109,6 +109,10 @@ public sealed class GetDashboardQueryServiceTests
         public Task AddAsync(Sensor sensor, CancellationToken ct) { _items.Add(sensor); return Task.CompletedTask; }
         public Task<Sensor?> GetByIdAsync(Guid id, CancellationToken ct) => Task.FromResult(_items.FirstOrDefault(s => s.Id == id));
         public Task<Sensor?> GetByExternalIdAsync(string externalId, CancellationToken ct) => Task.FromResult(_items.FirstOrDefault(s => s.ExternalId == externalId));
+
+        public Task<Sensor?> GetByExternalIdForUpdateAsync(string externalId, CancellationToken ct) =>
+            GetByExternalIdAsync(externalId, ct);
+
         public Task<IReadOnlyList<Sensor>> ListAsync(CancellationToken ct) => Task.FromResult((IReadOnlyList<Sensor>)_items);
         public Task SaveChangesAsync(CancellationToken ct) => Task.CompletedTask;
     }
@@ -132,5 +136,8 @@ public sealed class GetDashboardQueryServiceTests
             Task.FromResult((IReadOnlyList<SensorReading>)_items
                 .Where(r => r.SensorId.HasValue && sensorIds.Contains(r.SensorId.Value))
                 .GroupBy(r => r.SensorId).Select(g => g.OrderByDescending(r => r.ReceivedAtUtc).First()).ToList());
+
+        public Task<string?> TryGetNormalizedIeeeFromLatestReadingAsync(Guid sensorId, CancellationToken ct) =>
+            Task.FromResult<string?>(null);
     }
 }

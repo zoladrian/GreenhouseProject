@@ -1,0 +1,15 @@
+# Skopiuj do /etc/default/greenhouse-hotspot i dostosuj.
+# Instalacja: patrz scripts/pi-hotspot/README.md
+
+# 1 = włącz utrzymanie hotspotu; 0 = nic nie rób
+GREENHOUSE_HOTSPOT_ENABLED=1
+
+# Dokładna nazwa połączenia z: nmcli connection show
+# (np. po utworzeniu hotspotu w Raspberry Pi OS: często "Hotspot")
+GREENHOUSE_HOTSPOT_CONNECTION=greenhouse-ap
+
+# Opcjonalnie: pierwsze uruchomienie bez ręcznego profilu (1 = utwórz przez nmcli)
+# GREENHOUSE_HOTSPOT_CREATE=0
+# GREENHOUSE_HOTSPOT_IFNAME=wlan0
+# GREENHOUSE_HOTSPOT_SSID=Greenhouse
+# GREENHOUSE_HOTSPOT_PASSWORD=twoje_haslo_8plus

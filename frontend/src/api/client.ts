@@ -90,12 +90,17 @@ export interface MoisturePoint {
   linkQuality: number | null;
 }
 
+/** Z API (camelCase enum z .NET). */
+export type WateringInferredKind = 'unknown' | 'likelyManual' | 'likelyRain';
+
 export interface WateringEventDto {
   detectedAtUtc: string;
   moistureBefore: number;
   moistureAfter: number;
   deltaMoisture: number;
   windowDuration: string;
+  inferredKind: WateringInferredKind;
+  contributingSensorCount: number;
 }
 
 export interface DryingRateDto {

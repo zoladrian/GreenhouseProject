@@ -1,9 +1,9 @@
 namespace Greenhouse.Application.Abstractions;
 
 /// <summary>
-/// Zapewnia istnienie rekordu czujnika dla identyfikatora z MQTT (upsert po ExternalId).
+/// Zapewnia rekord czujnika: klucz IEEE (z JSON) lub topic; scala ze starym wpisem po friendly name.
 /// </summary>
 public interface ISensorProvisioningService
 {
-    Task<SensorEnsureResult> EnsureSensorAsync(string mqttIdentifier, CancellationToken cancellationToken);
+    Task<SensorEnsureResult> EnsureSensorAsync(EnsureSensorInput input, CancellationToken cancellationToken);
 }

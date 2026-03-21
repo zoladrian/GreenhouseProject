@@ -1,0 +1,16 @@
+[Unit]
+Description=Greenhouse — utrzymanie hotspotu Wi‑Fi (NetworkManager)
+After=network-pre.target NetworkManager.service
+Wants=NetworkManager.service
+
+[Service]
+Type=oneshot
+EnvironmentFile=-/etc/default/greenhouse-hotspot
+ExecStart=/usr/local/bin/greenhouse-ensure-hotspot.sh
+
+# Nie zapychaj logów przy sukcesie — komunikaty idą na stdout
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

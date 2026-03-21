@@ -27,33 +27,47 @@ public sealed class GetWateringEventsQueryService
             .ToList();
 
         if (sensorIds.Count == 0)
-        {
             return [];
-        }
 
         var readings = await _readings.GetBySensorIdsAsync(sensorIds, from, to, cancellationToken);
         var grouped = readings.GroupBy(r => r.SensorId);
 
-        var allEvents = new List<WateringEventDto>();
+        var rawEvents = new List<(Guid SensorId, WateringEvent Event)>();
 
         foreach (var group in grouped)
         {
+            if (!group.Key.HasValue)
+                continue;
+
             var samples = group
                 .Where(r => r.SoilMoisture.HasValue)
                 .OrderBy(r => r.ReceivedAtUtc)
                 .Select(r => new TimestampedMoisture(r.ReceivedAtUtc, r.SoilMoisture!.Value))
                 .ToList();
 
-            var detected = WateringDetector.Detect(samples);
-
-            allEvents.AddRange(detected.Select(e => new WateringEventDto(
-                e.DetectedAtUtc,
-                e.MoistureBefore,
-                e.MoistureAfter,
-                e.DeltaMoisture,
-                e.WindowDuration)));
+            foreach (var e in WateringDetector.Detect(samples))
+                rawEvents.Add((group.Key.Value, e));
         }
 
-        return allEvents.OrderBy(e => e.DetectedAtUtc).ToList();
+        var episodes = WateringEpisodeClusterer.Cluster(rawEvents);
+
+        return episodes
+            .Select(ep => new WateringEventDto(
+                ep.DetectedAtUtc,
+                ep.MoistureBefore,
+                ep.MoistureAfter,
+                ep.DeltaMoisture,
+                ep.WindowDuration,
+                ToApiKind(ep.InferredKind),
+                ep.ContributingSensorCount))
+            .ToList();
     }
+
+    private static string ToApiKind(WateringEventInferredKind kind) =>
+        kind switch
+        {
+            WateringEventInferredKind.LikelyRain => "likelyRain",
+            WateringEventInferredKind.LikelyManual => "likelyManual",
+            _ => "unknown"
+        };
 }

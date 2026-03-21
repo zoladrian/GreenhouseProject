@@ -1,0 +1,12 @@
+[Unit]
+Description=Greenhouse — okresowe sprawdzenie hotspotu Wi‑Fi
+
+[Timer]
+OnBootSec=90
+OnUnitActiveSec=5min
+AccuracySec=1min
+Persistent=true
+Unit=greenhouse-hotspot.service
+
+[Install]
+WantedBy=timers.target

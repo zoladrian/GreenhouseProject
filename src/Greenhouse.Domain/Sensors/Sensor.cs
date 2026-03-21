@@ -54,6 +54,25 @@ public sealed class Sensor
         DisplayName = trimmed.Length > 120 ? trimmed[..120] : trimmed;
     }
 
+    /// <summary>
+    /// Zmiana stabilnego klucza z topicu (friendly name) na adres IEEE po pierwszym odczycie z polem <c>ieee_address</c> w JSON.
+    /// </summary>
+    public void RekeyExternalId(string newExternalId)
+    {
+        if (string.IsNullOrWhiteSpace(newExternalId))
+        {
+            throw new ArgumentException("Identyfikator czujnika jest wymagany.", nameof(newExternalId));
+        }
+
+        var trimmed = newExternalId.Trim();
+        if (trimmed.Length > 120)
+        {
+            throw new ArgumentException("Identyfikator czujnika nie może przekraczać 120 znaków.", nameof(newExternalId));
+        }
+
+        ExternalId = trimmed;
+    }
+
     public void AssignToNawa(Guid nawaId)
     {
         if (nawaId == Guid.Empty)

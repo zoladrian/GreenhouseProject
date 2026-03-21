@@ -9,6 +9,7 @@ Możesz **naśladować** to zachowanie na malince z hotspotem, żeby użytkownik
 - Działa głównie dla testów **HTTP** (port **80**). Część telefonów używa **HTTPS** — bez własnego CA na urządzeniach nie przechwycisz tego czysto.
 - **Nie każdy** model pokaże okno automatycznie; czasem trzeba **stuknąć** w powiadomienie o sieci bez internetu.
 - Konfiguracja **hotspotu** (`hostapd` / NetworkManager) i **DNS** (`dnsmasq`) jest na **hoście Raspberry Pi OS**, nie w kontenerach z `docker compose` (API nasłuchuje na **5000**).
+- Żeby hotspot **sam wracał po restarcie / zrzutach**, użyj **systemd + skryptu na hoście**: [`scripts/pi-hotspot/README.md`](../scripts/pi-hotspot/README.md) (to nie jest kod w kontenerze API).
 
 ## Architektura (schemat)
 

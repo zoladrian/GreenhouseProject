@@ -93,6 +93,9 @@ public sealed class AssignSensorToNawaCommandServiceTests
         public Task<Sensor?> GetByExternalIdAsync(string externalId, CancellationToken cancellationToken) =>
             Task.FromResult(_byId.Values.FirstOrDefault(s => s.ExternalId == externalId));
 
+        public Task<Sensor?> GetByExternalIdForUpdateAsync(string externalId, CancellationToken cancellationToken) =>
+            GetByExternalIdAsync(externalId, cancellationToken);
+
         public Task<IReadOnlyList<Sensor>> ListAsync(CancellationToken cancellationToken) =>
             Task.FromResult((IReadOnlyList<Sensor>)_byId.Values.ToList());
 

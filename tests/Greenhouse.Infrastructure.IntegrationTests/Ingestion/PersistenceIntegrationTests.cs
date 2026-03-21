@@ -23,10 +23,10 @@ public sealed class PersistenceIntegrationTests
         await using var dbContext = new GreenhouseDbContext(dbOptions);
         await dbContext.Database.EnsureCreatedAsync();
 
-        ISensorReadingRepository repository = new EfSensorReadingRepository(dbContext);
-        ISensorRepository sensorRepository = new EfSensorRepository(dbContext);
-        var provisioning = new SensorProvisioningService(sensorRepository);
         IMqttPayloadParser parser = new JsonMqttPayloadParser();
+        ISensorReadingRepository repository = new EfSensorReadingRepository(dbContext, parser);
+        ISensorRepository sensorRepository = new EfSensorRepository(dbContext);
+        var provisioning = new SensorProvisioningService(sensorRepository, repository);
         var service = new MqttMessageIngestionService(
             parser,
             repository,
@@ -46,5 +46,59 @@ public sealed class PersistenceIntegrationTests
         Assert.Equal(23.8m, latest[0].Temperature);
         Assert.Equal(0m, latest[0].SoilMoisture);
         Assert.NotNull(latest[0].SensorId);
+    }
+
+    [Fact]
+    public async Task IngestAsync_AfterZ2mFriendlyRename_ShouldKeepSingleSensor_ByIeeeInPayload()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+
+        var dbOptions = new DbContextOptionsBuilder<GreenhouseDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var dbContext = new GreenhouseDbContext(dbOptions);
+        await dbContext.Database.EnsureCreatedAsync();
+
+        IMqttPayloadParser parser = new JsonMqttPayloadParser();
+        ISensorReadingRepository repository = new EfSensorReadingRepository(dbContext, parser);
+        ISensorRepository sensorRepository = new EfSensorRepository(dbContext);
+        var provisioning = new SensorProvisioningService(sensorRepository, repository);
+        var service = new MqttMessageIngestionService(
+            parser,
+            repository,
+            provisioning,
+            Microsoft.Extensions.Logging.Abstractions.NullLogger<MqttMessageIngestionService>.Instance,
+            new MqttIngestTelemetry());
+
+        const string ieee = "0x00158d0001a2b3c4";
+        // Najpierw wpis bez IEEE (stary klient) — ExternalId = nazwa z topicu
+        var m0 = new IncomingMqttMessage(
+            "zigbee2mqtt/stary_nickname",
+            "{\"soil_moisture\":39}",
+            DateTime.UtcNow.AddMinutes(-5));
+        await service.IngestAsync(m0, CancellationToken.None);
+
+        // Ten sam topic, już z IEEE w JSON (skan ostatnich odczytów znajdzie IEEE przy rename)
+        var m0b = new IncomingMqttMessage(
+            "zigbee2mqtt/stary_nickname",
+            $"{{\"soil_moisture\":40,\"ieee_address\":\"{ieee}\"}}",
+            DateTime.UtcNow.AddMinutes(-4));
+        await service.IngestAsync(m0b, CancellationToken.None);
+
+        var m2 = new IncomingMqttMessage(
+            "zigbee2mqtt/nowy_nickname",
+            $"{{\"soil_moisture\":41,\"ieee_address\":\"{ieee}\"}}",
+            DateTime.UtcNow.AddMinutes(-3));
+        await service.IngestAsync(m2, CancellationToken.None);
+
+        var sensors = await sensorRepository.ListAsync(CancellationToken.None);
+        Assert.Single(sensors);
+        Assert.Equal(ieee, sensors[0].ExternalId, ignoreCase: true);
+        Assert.Equal("nowy_nickname", sensors[0].DisplayName);
+
+        var latest = await repository.GetLatestAsync(10, CancellationToken.None);
+        Assert.All(latest, r => Assert.Equal(sensors[0].Id, r.SensorId));
     }
 }

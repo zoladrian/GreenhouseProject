@@ -29,4 +29,19 @@ public sealed class SensorTests
         var s = Sensor.Register("s1");
         Assert.Throws<ArgumentException>(() => s.AssignToNawa(Guid.Empty));
     }
+
+    [Fact]
+    public void RekeyExternalId_ShouldReplaceStableKey()
+    {
+        var s = Sensor.Register("stary_topic_name");
+        s.RekeyExternalId("0x00158d0001a2b3c4");
+        Assert.Equal("0x00158d0001a2b3c4", s.ExternalId);
+    }
+
+    [Fact]
+    public void RekeyExternalId_ShouldRejectEmpty()
+    {
+        var s = Sensor.Register("x");
+        Assert.Throws<ArgumentException>(() => s.RekeyExternalId("  "));
+    }
 }

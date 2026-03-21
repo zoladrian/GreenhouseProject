@@ -27,6 +27,7 @@ public static class DependencyInjection
         services.AddScoped<ISensorReadingRepository, EfSensorReadingRepository>();
         services.AddScoped<INawaRepository, EfNawaRepository>();
         services.AddScoped<ISensorRepository, EfSensorRepository>();
+        services.AddScoped<ISensorDuplicateMerger, EfSensorDuplicateMerger>();
         services.AddSingleton<IMqttPayloadParser, JsonMqttPayloadParser>();
 
         return services;

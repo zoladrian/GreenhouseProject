@@ -298,13 +298,29 @@ export function NawaDetailPage() {
 
       {wateringEvents && wateringEvents.length > 0 && (
         <div style={{ background: '#fff', borderRadius: 12, padding: 16, marginTop: 12, boxShadow: '0 1px 3px rgba(0,0,0,.08)' }}>
-          <h3 style={{ fontSize: 14, marginBottom: 8 }}>Wykryte podlania</h3>
-          {wateringEvents.map((e, i) => (
-            <div key={i} style={{ fontSize: 13, color: '#475569', marginBottom: 4 }}>
-              {new Date(e.detectedAtUtc).toLocaleString('pl-PL')}:{' '}
-              {e.moistureBefore}% → {e.moistureAfter}% (+{e.deltaMoisture}%)
-            </div>
-          ))}
+          <h3 style={{ fontSize: 14, marginBottom: 8 }}>Skoki wilgotności (podlanie / deszcz?)</h3>
+          {wateringEvents.map((e, i) => {
+            const kindLabel =
+              e.inferredKind === 'likelyRain'
+                ? 'Deszcz?'
+                : e.inferredKind === 'likelyManual'
+                  ? 'Podlanie'
+                  : 'Nieznane';
+            const kindColor =
+              e.inferredKind === 'likelyRain' ? '#0369a1' : e.inferredKind === 'likelyManual' ? '#15803d' : '#b45309';
+            return (
+              <div key={i} style={{ fontSize: 13, color: '#475569', marginBottom: 6 }}>
+                <span style={{ fontWeight: 600, color: kindColor }}>{kindLabel}</span>
+                {' · '}
+                {new Date(e.detectedAtUtc).toLocaleString('pl-PL')}
+                {' · '}
+                {e.moistureBefore}% → {e.moistureAfter}% (+{e.deltaMoisture}%)
+                {e.contributingSensorCount > 1 && (
+                  <span style={{ fontSize: 11, color: '#94a3b8' }}> · {e.contributingSensorCount} czujniki</span>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
 

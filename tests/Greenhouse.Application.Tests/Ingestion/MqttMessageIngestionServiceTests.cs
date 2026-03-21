@@ -97,7 +97,7 @@ public sealed class MqttMessageIngestionServiceTests
             _id = id;
         }
 
-        public Task<SensorEnsureResult> EnsureSensorAsync(string mqttIdentifier, CancellationToken cancellationToken) =>
+        public Task<SensorEnsureResult> EnsureSensorAsync(EnsureSensorInput input, CancellationToken cancellationToken) =>
             Task.FromResult(new SensorEnsureResult(_id, CreatedNew: false));
     }
 
@@ -106,9 +106,9 @@ public sealed class MqttMessageIngestionServiceTests
         public string? LastExternalId { get; private set; }
         private static readonly Guid Id = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
 
-        public Task<SensorEnsureResult> EnsureSensorAsync(string mqttIdentifier, CancellationToken cancellationToken)
+        public Task<SensorEnsureResult> EnsureSensorAsync(EnsureSensorInput input, CancellationToken cancellationToken)
         {
-            LastExternalId = mqttIdentifier;
+            LastExternalId = input.CanonicalExternalId;
             return Task.FromResult(new SensorEnsureResult(Id, CreatedNew: false));
         }
     }
@@ -140,5 +140,8 @@ public sealed class MqttMessageIngestionServiceTests
                 .GroupBy(r => r.SensorId)
                 .Select(g => g.OrderByDescending(r => r.ReceivedAtUtc).First())
                 .ToList());
+
+        public Task<string?> TryGetNormalizedIeeeFromLatestReadingAsync(Guid sensorId, CancellationToken cancellationToken) =>
+            Task.FromResult<string?>(null);
     }
 }

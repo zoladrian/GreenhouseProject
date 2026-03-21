@@ -1,5 +1,5 @@
 import ReactECharts from 'echarts-for-react';
-import type { MoisturePoint, WateringEventDto } from '../api/client';
+import type { MoisturePoint, WateringEventDto, WateringInferredKind } from '../api/client';
 
 interface Props {
   points: MoisturePoint[];
@@ -9,6 +9,17 @@ interface Props {
   moistureMin?: number | null;
   /** Powyżej — strefa „za mokro”; niebieska linia. */
   moistureMax?: number | null;
+}
+
+function kindVisual(kind: WateringInferredKind | string | undefined) {
+  switch (kind) {
+    case 'likelyRain':
+      return { color: '#0369a1', shortLabel: 'Deszcz?' };
+    case 'likelyManual':
+      return { color: '#15803d', shortLabel: 'Podlanie' };
+    default:
+      return { color: '#b45309', shortLabel: 'Skok wilg.' };
+  }
 }
 
 export function MoistureChart({ points, wateringEvents = [], title, moistureMin, moistureMax }: Props) {
@@ -42,6 +53,23 @@ export function MoistureChart({ points, wateringEvents = [], title, moistureMin,
         ]
       : [];
 
+  const wateringVertLines =
+    wateringEvents.length > 0
+      ? wateringEvents.map((e) => {
+          const v = kindVisual(e.inferredKind);
+          return {
+            xAxis: e.detectedAtUtc,
+            name: v.shortLabel,
+            lineStyle: { color: v.color, type: 'dashed' as const, width: 2 },
+            label: {
+              formatter: `${v.shortLabel} +${e.deltaMoisture}%`,
+              color: v.color,
+              fontSize: 10,
+            },
+          };
+        })
+      : [];
+
   const series = sensors.map((name, idx) => ({
     name,
     type: 'line' as const,
@@ -51,21 +79,14 @@ export function MoistureChart({ points, wateringEvents = [], title, moistureMin,
       .filter((p) => p.sensorIdentifier === name && p.soilMoisture !== null)
       .map((p) => [p.utcTime, p.soilMoisture]),
     markLine:
-      idx === 0 && thresholdLines.length > 0
-        ? { symbol: 'none', data: thresholdLines, silent: true }
+      idx === 0 && (thresholdLines.length > 0 || wateringVertLines.length > 0)
+        ? {
+            symbol: 'none',
+            data: [...thresholdLines, ...wateringVertLines],
+            silent: false,
+          }
         : undefined,
   }));
-
-  if (wateringEvents.length > 0) {
-    series.push({
-      name: 'Podlanie',
-      type: 'line' as const,
-      smooth: false,
-      symbol: 'diamond',
-      data: wateringEvents.map((e) => [e.detectedAtUtc, e.moistureAfter]),
-      markLine: undefined,
-    });
-  }
 
   const option = {
     title: title ? { text: title, left: 'center', textStyle: { fontSize: 14 } } : undefined,
@@ -77,5 +98,16 @@ export function MoistureChart({ points, wateringEvents = [], title, moistureMin,
     series,
   };
 
-  return <ReactECharts option={option} style={{ height: 280 }} />;
+  return (
+    <div>
+      <ReactECharts option={option} style={{ height: 280 }} />
+      {wateringEvents.length > 0 && (
+        <p style={{ fontSize: 10, color: '#64748b', marginTop: 4, textAlign: 'center' }}>
+          Pionowe linie: <span style={{ color: '#15803d' }}>podlanie</span> (1 czujnik) /{' '}
+          <span style={{ color: '#0369a1' }}>deszcz?</span> (≥2 czujniki w krótkim czasie) — heurystyka bez
+          danych pogodowych.
+        </p>
+      )}
+    </div>
+  );
 }

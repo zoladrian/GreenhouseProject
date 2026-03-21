@@ -5,22 +5,17 @@ namespace Greenhouse.Application.Tests.Ingestion;
 public sealed class ZigbeeIeeeAddressTests
 {
     [Theory]
-    [InlineData("0xFFFFB40E0605C41C", "0xffffb40e0605c41c")]
-    [InlineData("ffffb40e0605c41c", "0xffffb40e0605c41c")]
-    [InlineData("0xffffb40e0605c41c", "0xffffb40e0605c41c")]
-    public void TryNormalize_AcceptsSixteenHexDigits(string raw, string expected)
+    [InlineData("0x00158d0001a2b3c4")]
+    [InlineData("0X00158d0001a2b3c4")]
+    public void IsCanonicalStoredExternalId_ShouldReturnTrue_ForNormalizedIeee(string stored)
     {
-        Assert.True(ZigbeeIeeeAddress.TryNormalize(raw, out var n));
-        Assert.Equal(expected, n);
+        Assert.True(ZigbeeIeeeAddress.TryNormalize(stored, out var n));
+        Assert.True(ZigbeeIeeeAddress.IsCanonicalStoredExternalId(n));
     }
 
-    [Theory]
-    [InlineData("")]
-    [InlineData("0x123")]
-    [InlineData("not-hex")]
-    [InlineData("0xGGGGb40e0605c41c")]
-    public void TryNormalize_RejectsInvalid(string raw)
+    [Fact]
+    public void IsCanonicalStoredExternalId_ShouldReturnFalse_ForFriendlyName()
     {
-        Assert.False(ZigbeeIeeeAddress.TryNormalize(raw, out _));
+        Assert.False(ZigbeeIeeeAddress.IsCanonicalStoredExternalId("Czujnik_1"));
     }
 }

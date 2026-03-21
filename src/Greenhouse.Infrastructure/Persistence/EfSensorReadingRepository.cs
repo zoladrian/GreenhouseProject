@@ -1,4 +1,5 @@
 using Greenhouse.Application.Abstractions;
+using Greenhouse.Application.Ingestion;
 using Greenhouse.Domain.SensorReadings;
 using Microsoft.EntityFrameworkCore;
 
@@ -7,10 +8,12 @@ namespace Greenhouse.Infrastructure.Persistence;
 public sealed class EfSensorReadingRepository : ISensorReadingRepository
 {
     private readonly GreenhouseDbContext _dbContext;
+    private readonly IMqttPayloadParser _payloadParser;
 
-    public EfSensorReadingRepository(GreenhouseDbContext dbContext)
+    public EfSensorReadingRepository(GreenhouseDbContext dbContext, IMqttPayloadParser payloadParser)
     {
         _dbContext = dbContext;
+        _payloadParser = payloadParser;
     }
 
     public async Task AddAsync(SensorReading reading, CancellationToken cancellationToken)
@@ -70,5 +73,23 @@ public sealed class EfSensorReadingRepository : ISensorReadingRepository
         }
 
         return results;
+    }
+
+    public async Task<string?> TryGetNormalizedIeeeFromLatestReadingAsync(Guid sensorId, CancellationToken cancellationToken)
+    {
+        var readings = await _dbContext.SensorReadings.AsNoTracking()
+            .Where(x => x.SensorId == sensorId)
+            .OrderByDescending(x => x.ReceivedAtUtc)
+            .Take(50)
+            .ToListAsync(cancellationToken);
+
+        foreach (var r in readings)
+        {
+            var parsed = _payloadParser.ParseSensorPayload(r.RawPayloadJson);
+            if (ZigbeeIeeeAddress.TryNormalize(parsed.IeeeAddress, out var n))
+                return n;
+        }
+
+        return null;
     }
 }

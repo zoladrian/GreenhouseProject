@@ -38,7 +38,7 @@ public sealed class AnalyticsIntegrationTests : IDisposable
         _db.ChangeTracker.Clear();
 
         var sensorRepo = new EfSensorRepository(_db);
-        var readingRepo = new EfSensorReadingRepository(_db);
+        var readingRepo = new EfSensorReadingRepository(_db, new JsonMqttPayloadParser());
 
         var service = new GetWateringEventsQueryService(sensorRepo, readingRepo);
         var events = await service.ExecuteAsync(
@@ -49,6 +49,40 @@ public sealed class AnalyticsIntegrationTests : IDisposable
 
         Assert.Single(events);
         Assert.Equal(26m, events[0].DeltaMoisture);
+        Assert.Equal("likelyManual", events[0].InferredKind);
+        Assert.Equal(1, events[0].ContributingSensorCount);
+    }
+
+    [Fact]
+    public async Task WateringEvents_TwoSensorsInWindow_ShouldInferLikelyRain()
+    {
+        var t0 = DateTime.UtcNow.AddMinutes(-90);
+        var nawaId = await SeedNawaWithTwoSensorsWateringSpikes(
+            ("s-a", new[]
+            {
+                (t0, 20m),
+                (t0.AddMinutes(5), 45m),
+            }),
+            ("s-b", new[]
+            {
+                (t0.AddMinutes(8), 22m),
+                (t0.AddMinutes(12), 48m),
+            }));
+
+        _db.ChangeTracker.Clear();
+
+        var sensorRepo = new EfSensorRepository(_db);
+        var readingRepo = new EfSensorReadingRepository(_db, new JsonMqttPayloadParser());
+        var service = new GetWateringEventsQueryService(sensorRepo, readingRepo);
+        var events = await service.ExecuteAsync(
+            nawaId,
+            DateTime.UtcNow.AddHours(-3),
+            DateTime.UtcNow,
+            CancellationToken.None);
+
+        Assert.Single(events);
+        Assert.Equal("likelyRain", events[0].InferredKind);
+        Assert.Equal(2, events[0].ContributingSensorCount);
     }
 
     [Fact]
@@ -65,7 +99,7 @@ public sealed class AnalyticsIntegrationTests : IDisposable
         _db.ChangeTracker.Clear();
 
         var sensorRepo = new EfSensorRepository(_db);
-        var readingRepo = new EfSensorReadingRepository(_db);
+        var readingRepo = new EfSensorReadingRepository(_db, new JsonMqttPayloadParser());
 
         var service = new GetDryingRatesQueryService(sensorRepo, readingRepo);
         var rates = await service.ExecuteAsync(
@@ -92,7 +126,7 @@ public sealed class AnalyticsIntegrationTests : IDisposable
         _db.ChangeTracker.Clear();
 
         var sensorRepo = new EfSensorRepository(_db);
-        var readingRepo = new EfSensorReadingRepository(_db);
+        var readingRepo = new EfSensorReadingRepository(_db, new JsonMqttPayloadParser());
 
         var service = new GetMoistureSeriesQueryService(sensorRepo, readingRepo);
         var points = await service.ExecuteAsync(
@@ -111,13 +145,13 @@ public sealed class AnalyticsIntegrationTests : IDisposable
     {
         var nawaRepo = new EfNawaRepository(_db);
         var sensorRepo = new EfSensorRepository(_db);
-        var readingRepo = new EfSensorReadingRepository(_db);
+        var parser = new JsonMqttPayloadParser();
+        var readingRepo = new EfSensorReadingRepository(_db, parser);
 
         var nawa = Nawa.Create($"Nawa-{Guid.NewGuid():N}", null);
         await nawaRepo.AddAsync(nawa, CancellationToken.None);
 
-        var provisioning = new SensorProvisioningService(sensorRepo);
-        var parser = new JsonMqttPayloadParser();
+        var provisioning = new SensorProvisioningService(sensorRepo, readingRepo);
         var ingestion = new MqttMessageIngestionService(
             parser,
             readingRepo,
@@ -140,6 +174,50 @@ public sealed class AnalyticsIntegrationTests : IDisposable
         await sensorRepo.SaveChangesAsync(CancellationToken.None);
 
         return (nawa.Id, tracked.Id);
+    }
+
+    private async Task<Guid> SeedNawaWithTwoSensorsWateringSpikes(
+        (string externalId, (DateTime time, decimal moisture)[] readings) sensorA,
+        (string externalId, (DateTime time, decimal moisture)[] readings) sensorB)
+    {
+        var nawaRepo = new EfNawaRepository(_db);
+        var sensorRepo = new EfSensorRepository(_db);
+        var parser = new JsonMqttPayloadParser();
+        var readingRepo = new EfSensorReadingRepository(_db, parser);
+
+        var nawa = Nawa.Create($"Nawa-{Guid.NewGuid():N}", null);
+        await nawaRepo.AddAsync(nawa, CancellationToken.None);
+
+        var provisioning = new SensorProvisioningService(sensorRepo, readingRepo);
+        var ingestion = new MqttMessageIngestionService(
+            parser,
+            readingRepo,
+            provisioning,
+            Microsoft.Extensions.Logging.Abstractions.NullLogger<MqttMessageIngestionService>.Instance,
+            new MqttIngestTelemetry());
+
+        foreach (var sensorData in new[] { sensorA, sensorB })
+        {
+            foreach (var (time, moisture) in sensorData.readings)
+            {
+                await ingestion.IngestAsync(new IncomingMqttMessage(
+                    $"zigbee2mqtt/{sensorData.externalId}",
+                    $"{{\"soil_moisture\":{moisture},\"temperature\":22,\"battery\":90,\"linkquality\":100}}",
+                    time), CancellationToken.None);
+            }
+        }
+
+        _db.ChangeTracker.Clear();
+
+        foreach (var ext in new[] { sensorA.externalId, sensorB.externalId })
+        {
+            var untracked = await sensorRepo.GetByExternalIdAsync(ext, CancellationToken.None);
+            var tracked = await sensorRepo.GetByIdAsync(untracked!.Id, CancellationToken.None);
+            tracked!.AssignToNawa(nawa.Id);
+            await sensorRepo.SaveChangesAsync(CancellationToken.None);
+        }
+
+        return nawa.Id;
     }
 
     public void Dispose() => _db.Dispose();

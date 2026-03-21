@@ -17,4 +17,7 @@ public interface ISensorReadingRepository
     Task<IReadOnlyList<SensorReading>> GetLatestPerSensorAsync(
         IReadOnlyList<Guid> sensorIds,
         CancellationToken cancellationToken);
+
+    /// <summary>Odczytuje znormalizowany IEEE z ostatniego zapisu dla danego czujnika (JSON Z2M).</summary>
+    Task<string?> TryGetNormalizedIeeeFromLatestReadingAsync(Guid sensorId, CancellationToken cancellationToken);
 }

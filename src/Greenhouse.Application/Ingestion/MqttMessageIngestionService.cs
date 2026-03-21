@@ -56,12 +56,15 @@ public sealed class MqttMessageIngestionService : IMqttMessageIngestionService
                 Snippet(message.Payload, 160));
         }
 
-        var ensured = await _sensorProvisioning.EnsureSensorAsync(externalId, cancellationToken);
+        var ensured = await _sensorProvisioning.EnsureSensorAsync(
+            new EnsureSensorInput(sensorIdentifier, externalId),
+            cancellationToken);
         if (ensured.CreatedNew)
         {
             _logger.LogInformation(
-                "Zarejestrowano nowy czujnik z MQTT: ExternalId={ExternalId}, SensorId={SensorId}",
+                "Zarejestrowano nowy czujnik z MQTT: topic={TopicName}, klucz={CanonicalId}, SensorId={SensorId}",
                 sensorIdentifier,
+                externalId,
                 ensured.SensorId);
         }
 
