@@ -40,14 +40,23 @@ export function DashboardPage() {
     }
   }, [data, tts]);
 
-  if (loading) return <p className="text-muted">Ładowanie...</p>;
+  if (loading) {
+    return (
+      <div className="dashboard-page">
+        <div className="dashboard-page__inner">
+          <p className="dashboard-page__loading">Ładowanie...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div>
+    <div className="dashboard-page">
+      <div className="dashboard-page__inner">
       <DashboardHero />
 
       <div className="dashboard-toolbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12, gap: 12 }}>
-        <h2 style={{ margin: 0 }}>Dashboard</h2>
+        <h2 style={{ margin: 0 }}>Pulpit</h2>
         <div style={{ textAlign: 'right', maxWidth: 220 }}>
           <label style={{ fontSize: 12, display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'flex-end' }} className="text-muted">
             <input
@@ -71,7 +80,23 @@ export function DashboardPage() {
         </div>
       </div>
 
-      <div style={{ marginBottom: 16 }}>
+      <div
+        style={{
+          background: 'var(--card-bg, #f8fafc)',
+          borderRadius: 10,
+          padding: '12px 14px',
+          marginBottom: 14,
+          border: '1px solid rgba(0,0,0,.06)',
+        }}
+      >
+        <p style={{ fontSize: 12, margin: 0, color: '#64748b', lineHeight: 1.5 }}>
+          <strong>Zakresy i statusy:</strong> Kolor statusu wynika z progów wilgotności zapisanych w nawie:{' '}
+          <em>Sucho</em>, gdy najsuchszy czujnik jest na lub poniżej progu „podlej”; <em>Za mokro</em>, gdy najmokrzejszy — na lub powyżej progu „za mokro”.{' '}
+          <em>Rozstrzał</em> i <em>sprzeczne czujniki</em> to osobne sytuacje przy większej liczbie punktów pomiarowych. Na karcie widać średnią temperaturę z ostatnich odczytów; progi alertu °C są w ustawieniach nawy i na dole karty (jeśli ustawione).
+        </p>
+      </div>
+
+      <div className="dashboard-page__voice" style={{ marginBottom: 16 }}>
         <button
           type="button"
           className="btn-primary"
@@ -92,7 +117,7 @@ export function DashboardPage() {
         >
           {voiceReportLoading ? 'Ładowanie raportu…' : 'Odczytaj dzienny raport (głos)'}
         </button>
-        <p style={{ fontSize: 11, color: '#94a3b8', margin: '6px 0 0', lineHeight: 1.35 }}>
+        <p className="text-muted" style={{ fontSize: 11, margin: '6px 0 0', lineHeight: 1.35 }}>
           Dane z maliny (średnie od lokalnej północy, strefa z konfiguracji API). Wymaga działającej syntezy mowy w
           przeglądarce.
         </p>
@@ -117,11 +142,24 @@ export function DashboardPage() {
           <NawaCard key={snap.nawaId} snap={snap} onClick={() => navigate(`/nawy/${snap.nawaId}`)} />
         ))}
       </div>
+      </div>
     </div>
   );
 }
 
+function formatSnapshotRanges(snap: NawaSnapshot): string | null {
+  const m: string[] = [];
+  if (snap.moistureMin != null) m.push(`podlej ≤ ${snap.moistureMin}%`);
+  if (snap.moistureMax != null) m.push(`za mokro ≥ ${snap.moistureMax}%`);
+  const t: string[] = [];
+  if (snap.temperatureMin != null) t.push(`temp. min ${snap.temperatureMin}°C`);
+  if (snap.temperatureMax != null) t.push(`temp. max ${snap.temperatureMax}°C`);
+  if (m.length === 0 && t.length === 0) return null;
+  return [...m, ...t].join(' · ');
+}
+
 function NawaCard({ snap, onClick }: { snap: NawaSnapshot; onClick: () => void }) {
+  const ranges = formatSnapshotRanges(snap);
   return (
     <div role="button" tabIndex={0} className="nawa-card" onClick={onClick} onKeyDown={(e) => e.key === 'Enter' && onClick()}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -131,6 +169,11 @@ function NawaCard({ snap, onClick }: { snap: NawaSnapshot; onClick: () => void }
         </div>
         <StatusBadge status={snap.status} />
       </div>
+      {ranges && (
+        <div style={{ fontSize: 11, color: '#64748b', marginTop: 8, lineHeight: 1.35 }} title="Progi z ustawień nawy">
+          <strong>Zakresy:</strong> {ranges}
+        </div>
+      )}
 
       <div className="nawa-card__meta">
         <div>

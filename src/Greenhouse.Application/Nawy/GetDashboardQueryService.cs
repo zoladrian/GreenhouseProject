@@ -88,7 +88,8 @@ public sealed class GetDashboardQueryService
                 nawa.Id, nawa.Name, nawa.PlantNote,
                 status, sensorIds.Count, moistureReadingCount,
                 avgMoisture, minMoisture, maxMoisture, moistureSpread, avgTemp,
-                lowestBattery, oldestReading, utcNow));
+                lowestBattery, oldestReading, utcNow,
+                nawa.MoistureMin, nawa.MoistureMax, nawa.TemperatureMin, nawa.TemperatureMax));
         }
 
         return snapshots;
@@ -139,5 +140,6 @@ public sealed class GetDashboardQueryService
         new(nawa.Id, nawa.Name, nawa.PlantNote,
             OperatorStatus.NoData, 0, 0,
             null, null, null, null, null,
-            null, null, utcNow);
+            null, null, utcNow,
+            nawa.MoistureMin, nawa.MoistureMax, nawa.TemperatureMin, nawa.TemperatureMax);
 }

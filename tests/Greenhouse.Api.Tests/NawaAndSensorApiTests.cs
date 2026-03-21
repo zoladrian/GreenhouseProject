@@ -77,4 +77,12 @@ public sealed class NawaAndSensorApiTests : IClassFixture<GreenhouseWebApplicati
             new { nawaId = created!.Id });
         Assert.Equal(HttpStatusCode.NotFound, assignResp.StatusCode);
     }
+
+    [Fact]
+    public async Task DeleteSensor_Unknown_Returns404()
+    {
+        var client = _factory.CreateClient();
+        var resp = await client.DeleteAsync($"/api/sensor/{Guid.NewGuid()}");
+        Assert.Equal(HttpStatusCode.NotFound, resp.StatusCode);
+    }
 }

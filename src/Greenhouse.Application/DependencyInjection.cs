@@ -28,6 +28,7 @@ public static class DependencyInjection
         services.AddScoped<GetDashboardQueryService>();
 
         services.AddScoped<ListSensorsQueryService>();
+        services.AddScoped<DeleteSensorCommandService>();
         services.AddScoped<AssignSensorToNawaCommandService>();
         services.AddScoped<GetSensorHealthQueryService>();
         services.AddScoped<GetSensorDetailQueryService>();
@@ -38,6 +39,7 @@ public static class DependencyInjection
         services.AddScoped<GetDryingRatesQueryService>();
 
         services.AddScoped<GetVoiceDailyReportQueryService>();
+        services.AddScoped<GetNawaVoiceBriefQueryService>();
 
         return services;
     }

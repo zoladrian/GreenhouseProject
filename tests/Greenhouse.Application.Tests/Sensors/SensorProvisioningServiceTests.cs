@@ -51,6 +51,8 @@ public sealed class SensorProvisioningServiceTests
         public Task<IReadOnlyList<Sensor>> ListAsync(CancellationToken cancellationToken) =>
             Task.FromResult((IReadOnlyList<Sensor>)Items.ToList());
 
+        public Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken) => Task.FromResult(false);
+
         public Task SaveChangesAsync(CancellationToken cancellationToken) => Task.CompletedTask;
     }
 
@@ -84,5 +86,11 @@ public sealed class SensorProvisioningServiceTests
 
             return Task.FromResult<string?>(null);
         }
+
+        public Task<int> AlignSensorIdentifierForSensorAsync(Guid sensorId, string externalId, CancellationToken cancellationToken) =>
+            Task.FromResult(0);
+
+        public Task<int> AlignAllLinkedReadingSensorIdentifiersAsync(CancellationToken cancellationToken) =>
+            Task.FromResult(0);
     }
 }

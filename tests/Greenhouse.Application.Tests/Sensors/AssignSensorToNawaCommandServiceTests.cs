@@ -105,6 +105,9 @@ public sealed class AssignSensorToNawaCommandServiceTests
             return Task.CompletedTask;
         }
 
+        public Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken) =>
+            Task.FromResult(_byId.Remove(id));
+
         public Task SaveChangesAsync(CancellationToken cancellationToken) => Task.CompletedTask;
     }
 }

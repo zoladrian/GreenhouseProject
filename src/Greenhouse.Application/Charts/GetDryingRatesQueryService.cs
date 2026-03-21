@@ -45,7 +45,7 @@ public sealed class GetDryingRatesQueryService
             if (rate is not null)
             {
                 results.Add(new DryingRateDto(
-                    sensor.ExternalId,
+                    sensor.DisplayName ?? sensor.ExternalId,
                     sensor.Id,
                     rate.WindowStart,
                     rate.WindowEnd,

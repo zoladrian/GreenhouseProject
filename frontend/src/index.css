@@ -218,6 +218,127 @@ textarea {
   color: var(--color-text-muted);
 }
 
+/* Pulpit — pełne tło ze „starego” zdjęcia szklarni; baner u góry to petunie (osobny plik) */
+.dashboard-page {
+  position: relative;
+  isolation: isolate;
+  margin: -16px;
+  margin-bottom: 0;
+  padding: 16px;
+  padding-bottom: calc(24px + env(safe-area-inset-bottom, 0));
+  min-height: calc(100dvh - 140px);
+  min-height: calc(100svh - 140px);
+  background-color: #0f172a;
+  background-image: url('/images/kwiaty-polskie-hero.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+
+@media (max-width: 768px) {
+  .dashboard-page {
+    background-attachment: scroll;
+  }
+}
+
+.dashboard-page::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse 130% 90% at 50% 20%,
+    rgba(15, 23, 42, 0.12) 0%,
+    transparent 55%,
+    rgba(15, 23, 42, 0.28) 100%
+  );
+}
+
+.dashboard-page__inner {
+  position: relative;
+  z-index: 1;
+}
+
+.dashboard-page__loading {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #f8fafc;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+.dashboard-page .dashboard-hero {
+  margin: 0 0 16px;
+}
+
+/* Lżejszy pasek pod nagłówkiem zdjęcia — na banerze petunii jest już napis marki */
+.dashboard-page .dashboard-hero__overlay {
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.32) 0%, transparent 58%);
+}
+
+.dashboard-page .dashboard-hero__brand {
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.45);
+}
+
+.dashboard-page .dashboard-toolbar h2 {
+  color: #0f172a;
+  text-shadow:
+    0 0 1px rgba(255, 255, 255, 0.95),
+    0 0 12px rgba(255, 255, 255, 0.75),
+    0 1px 2px rgba(255, 255, 255, 0.9);
+}
+
+.dashboard-page .dashboard-toolbar .text-muted {
+  color: #334155;
+  text-shadow: 0 0 8px rgba(255, 255, 255, 0.7);
+}
+
+.dashboard-page .dashboard-toolbar p {
+  text-shadow: 0 0 6px rgba(255, 255, 255, 0.65);
+}
+
+.dashboard-glass-panel {
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 14;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.dashboard-page .text-muted {
+  color: #334155;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.65);
+}
+
+.dashboard-page .text-muted strong {
+  color: #1e293b;
+}
+
+.dashboard-page a {
+  color: #0d9488;
+  font-weight: 600;
+  text-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
+}
+
+.dashboard-page .nawa-card {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.45);
+}
+
+.dashboard-page__voice [role='alert'] {
+  text-shadow: 0 0 8px rgba(255, 255, 255, 0.85);
+}
+
 .btn-primary {
   background: var(--color-brand-green);
   color: #fff;
@@ -261,4 +382,157 @@ textarea {
   margin-top: 10px;
   font-size: 13px;
   color: var(--color-text-muted);
+}
+
+/* Nawy — dwa zdjęcia szklarni (lewa / prawa połowa), wspólne przyciemnienie + panele „szkło” */
+.nawy-page {
+  position: relative;
+  isolation: isolate;
+  margin: -16px;
+  margin-bottom: 0;
+  padding: 16px;
+  padding-bottom: calc(24px + env(safe-area-inset-bottom, 0));
+  min-height: calc(100dvh - 140px);
+  min-height: calc(100svh - 140px);
+  background-color: #1e293b;
+  background-image:
+    url('/images/nawy-aisle-bg.png'),
+    url('/images/nawy-beds-bg.png');
+  background-size: 50.2% 100%, 50.2% 100%;
+  background-position: left center, right center;
+  background-repeat: no-repeat, no-repeat;
+}
+
+@media (max-width: 520px) {
+  .nawy-page {
+    background-size: cover, cover;
+    background-position:
+      20% center,
+      80% center;
+  }
+}
+
+.nawy-page::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    165deg,
+    rgba(15, 23, 42, 0.72) 0%,
+    rgba(15, 23, 42, 0.5) 45%,
+    rgba(15, 23, 42, 0.78) 100%
+  );
+}
+
+.nawy-page__inner {
+  position: relative;
+  z-index: 1;
+}
+
+.nawy-page__title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 800;
+  color: #f8fafc;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.45);
+}
+
+.nawy-page .card-surface {
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.12),
+    0 0 0 1px rgba(0, 0, 0, 0.04);
+}
+
+.nawy-page .text-muted {
+  color: #475569;
+}
+
+.nawy-page__toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  gap: 12px;
+}
+
+.nawy-page__form-row {
+  margin-bottom: 12px;
+  display: flex;
+  gap: 8px;
+}
+
+.nawy-page__form-row input {
+  background: rgba(255, 255, 255, 0.95);
+}
+
+.nawy-page__empty {
+  color: rgba(248, 250, 252, 0.92);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+  font-size: 14px;
+}
+
+.nawy-page__loading {
+  position: relative;
+  z-index: 1;
+  color: rgba(248, 250, 252, 0.95);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+}
+
+/* Szczegóły nawy — ten sam motyw tła */
+.nawa-glass {
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12);
+}
+
+.nawy-page--detail .nawa-detail-header {
+  margin-bottom: 12px;
+}
+
+.nawy-page--detail .nawa-detail-header .nawy-page__title {
+  margin-bottom: 4px;
+}
+
+.nawy-page--detail .nawa-detail-header .nawa-detail-sub {
+  margin: 0 0 8px;
+  font-size: 14px;
+  color: rgba(248, 250, 252, 0.9);
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.35);
+}
+
+.nawy-page--detail .nawa-detail-header .nawa-detail-desc {
+  margin: 0 0 12px;
+  font-size: 13px;
+  color: rgba(226, 232, 240, 0.95);
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.35);
+}
+
+.nawy-page--detail .nawa-voice-hint {
+  color: rgba(226, 232, 240, 0.92) !important;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+
+.nawy-page--detail details summary {
+  color: rgba(248, 250, 252, 0.95);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+}
+
+.nawy-page--detail .nawa-sensors-heading,
+.nawy-page--detail .nawa-sensors-empty {
+  color: rgba(248, 250, 252, 0.95);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+}
+
+.nawy-page--detail .nawa-chart-shell {
+  padding: 12px;
+  border-radius: 12px;
+  margin-bottom: 12px;
 }

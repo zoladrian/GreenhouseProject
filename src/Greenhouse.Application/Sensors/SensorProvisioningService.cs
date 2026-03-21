@@ -37,6 +37,7 @@ public sealed class SensorProvisioningService : ISensorProvisioningService
                 byFriendly.RekeyExternalId(canonical);
                 SyncDisplayNameFromMqtt(byFriendly, friendly);
                 await _sensors.SaveChangesAsync(cancellationToken);
+                await _readings.AlignSensorIdentifierForSensorAsync(byFriendly.Id, canonical, cancellationToken);
                 return new SensorEnsureResult(byFriendly.Id, CreatedNew: false);
             }
 
@@ -57,6 +58,7 @@ public sealed class SensorProvisioningService : ISensorProvisioningService
                 legacyTracked.RekeyExternalId(canonical);
                 SyncDisplayNameFromMqtt(legacyTracked, friendly);
                 await _sensors.SaveChangesAsync(cancellationToken);
+                await _readings.AlignSensorIdentifierForSensorAsync(legacyTracked.Id, canonical, cancellationToken);
                 return new SensorEnsureResult(legacyTracked.Id, CreatedNew: false);
             }
         }

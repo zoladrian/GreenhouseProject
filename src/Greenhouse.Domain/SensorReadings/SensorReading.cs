@@ -8,6 +8,9 @@ public sealed class SensorReading
 
     public Guid Id { get; private set; }
 
+    /// <summary>
+    /// Stabilny identyfikator serii: zwykle taki sam jak <c>Sensor.ExternalId</c> (IEEE z Zigbee), nie nazwa z topicu MQTT.
+    /// </summary>
     public string SensorIdentifier { get; private set; } = string.Empty;
 
     public DateTime ReceivedAtUtc { get; private set; }

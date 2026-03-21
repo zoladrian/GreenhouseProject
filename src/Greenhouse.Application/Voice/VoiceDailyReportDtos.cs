@@ -12,4 +12,9 @@ public sealed record NawaVoiceLineDto(
     decimal? AvgTemperature,
     decimal? AvgSoilMoisture,
     int ReadingCount,
-    int AssignedSensorCount);
+    int AssignedSensorCount,
+    string MoistureAssessment,
+    string TemperatureAssessment);
+
+/// <summary>Krótkie podsumowanie głosowe dla jednej nawy (panel szczegółów).</summary>
+public sealed record NawaVoiceBriefDto(string NawaName, string SpokenText);

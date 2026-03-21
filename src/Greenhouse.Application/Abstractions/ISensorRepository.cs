@@ -15,5 +15,8 @@ public interface ISensorRepository
 
     Task AddAsync(Sensor sensor, CancellationToken cancellationToken);
 
+    /// <summary>Usuwa czujnik. Odczyty zostają w bazie z <c>SensorId = null</c> (historia topiców).</summary>
+    Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken);
+
     Task SaveChangesAsync(CancellationToken cancellationToken);
 }

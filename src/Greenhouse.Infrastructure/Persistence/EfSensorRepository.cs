@@ -41,6 +41,17 @@ public sealed class EfSensorRepository : ISensorRepository
         await _dbContext.SaveChangesAsync(cancellationToken);
     }
 
+    public async Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken)
+    {
+        var entity = await _dbContext.Sensors.SingleOrDefaultAsync(x => x.Id == id, cancellationToken);
+        if (entity is null)
+            return false;
+
+        _dbContext.Sensors.Remove(entity);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return true;
+    }
+
     public Task SaveChangesAsync(CancellationToken cancellationToken) =>
         _dbContext.SaveChangesAsync(cancellationToken);
 }

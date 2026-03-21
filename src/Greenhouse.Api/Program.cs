@@ -69,6 +69,12 @@ app.MapGet("/api/voice/daily-report", async (GetVoiceDailyReportQueryService que
     return Results.Ok(report);
 });
 
+app.MapGet("/api/voice/nawa/{id:guid}/brief", async (Guid id, GetNawaVoiceBriefQueryService query, CancellationToken ct) =>
+{
+    var brief = await query.ExecuteAsync(id, ct);
+    return brief is null ? Results.NotFound() : Results.Ok(brief);
+});
+
 // ─── Dashboard ─────────────────────────────────────────────
 app.MapGet("/api/dashboard", async (GetDashboardQueryService query, CancellationToken ct) =>
 {
@@ -146,6 +152,12 @@ app.MapPut("/api/sensor/{sensorId:guid}/display-name", async (Guid sensorId, Upd
 {
     var dto = await command.ExecuteAsync(sensorId, body.DisplayName, ct);
     return dto is null ? Results.NotFound() : Results.Ok(dto);
+});
+
+app.MapDelete("/api/sensor/{sensorId:guid}", async (Guid sensorId, DeleteSensorCommandService command, CancellationToken ct) =>
+{
+    var ok = await command.ExecuteAsync(sensorId, ct);
+    return ok ? Results.NoContent() : Results.NotFound(new { error = "Nie znaleziono czujnika." });
 });
 
 app.MapGet("/api/sensor/health", async (GetSensorHealthQueryService query, CancellationToken ct) =>

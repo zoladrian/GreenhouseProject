@@ -18,4 +18,8 @@ public sealed record NawaSnapshotDto(
     decimal? AvgTemperature,
     int? LowestBattery,
     DateTime? OldestReadingUtc,
-    DateTime GeneratedAtUtc);
+    DateTime GeneratedAtUtc,
+    decimal? MoistureMin,
+    decimal? MoistureMax,
+    decimal? TemperatureMin,
+    decimal? TemperatureMax);

@@ -42,6 +42,11 @@ export interface NawaSnapshot {
   lowestBattery: number | null;
   oldestReadingUtc: string | null;
   generatedAtUtc: string;
+  /** Progi z ustawień nawy (do legendy na pulpicie) */
+  moistureMin: number | null;
+  moistureMax: number | null;
+  temperatureMin: number | null;
+  temperatureMax: number | null;
 }
 
 export interface NawaDto {
@@ -118,6 +123,13 @@ export interface NawaVoiceLineDto {
   avgSoilMoisture: number | null;
   readingCount: number;
   assignedSensorCount: number;
+  moistureAssessment: string;
+  temperatureAssessment: string;
+}
+
+export interface NawaVoiceBriefDto {
+  nawaName: string;
+  spokenText: string;
 }
 
 export interface VoiceDailyReportDto {
@@ -129,6 +141,7 @@ export interface VoiceDailyReportDto {
 
 export const api = {
   getVoiceDailyReport: () => fetchJson<VoiceDailyReportDto>('/voice/daily-report'),
+  getNawaVoiceBrief: (id: string) => fetchJson<NawaVoiceBriefDto>(`/voice/nawa/${id}/brief`),
   getDashboard: () => fetchJson<NawaSnapshot[]>('/dashboard'),
   getNawy: () => fetchJson<NawaDto[]>('/nawa'),
   getNawaDetail: (id: string) => fetchJson<NawaDetailDto>(`/nawa/${id}/detail`),
@@ -155,6 +168,15 @@ export const api = {
   },
   updateSensorDisplayName: (sensorId: string, displayName: string | null) =>
     putJson<SensorListItem>(`/sensor/${sensorId}/display-name`, { displayName }),
+  deleteSensor: async (sensorId: string) => {
+    const resp = await fetch(`${BASE}/sensor/${sensorId}`, { method: 'DELETE' });
+    if (resp.status === 404) {
+      throw new Error('Czujnik nie istnieje.');
+    }
+    if (!resp.ok) {
+      throw new Error(`HTTP ${resp.status}`);
+    }
+  },
   getMoistureSeries: (params: string) => fetchJson<MoisturePoint[]>(`/chart/moisture?${params}`),
   getWateringEvents: (nawaId: string, from?: string, to?: string) => {
     let qs = `nawaId=${nawaId}`;

@@ -68,8 +68,10 @@ public sealed class MqttMessageIngestionService : IMqttMessageIngestionService
                 ensured.SensorId);
         }
 
+        // Stabilny identyfikator wiersza = ExternalId czujnika (IEEE z JSON lub tymczasowo fragment topicu),
+        // żeby zmiana friendly name w Z2M nie rozszczepiała historii na wiele serii.
         var reading = SensorReading.Create(
-            sensorIdentifier,
+            externalId,
             message.ReceivedAtUtc,
             message.Topic,
             message.Payload,

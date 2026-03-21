@@ -1,5 +1,6 @@
 using Greenhouse.Application.Abstractions;
 using Greenhouse.Application.Ingestion;
+using Greenhouse.Domain.Sensors;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -79,8 +80,8 @@ public sealed class EfSensorDuplicateMerger : ISensorDuplicateMerger
                         "Rekey czujnika na IEEE: sensorId={SensorId} {OldExt} → {Ieee}",
                         legacyTracked.Id, legacyTracked.ExternalId, ieee);
                     legacyTracked.RekeyExternalId(ieee);
-                    if (string.IsNullOrWhiteSpace(legacyTracked.DisplayName))
-                        legacyTracked.SetDisplayName(legacySnapshot.ExternalId);
+                    await ApplyDisplayNameFromLatestMqttTopicAsync(
+                        legacyTracked.Id, legacyTracked, legacySnapshot.ExternalId, cancellationToken);
 
                     await _db.SaveChangesAsync(cancellationToken);
                     rekeys++;
@@ -125,12 +126,56 @@ public sealed class EfSensorDuplicateMerger : ISensorDuplicateMerger
         if (master.NawaId is null && legacy.NawaId is not null)
             master.AssignToNawa(legacy.NawaId.Value);
 
-        if (string.IsNullOrWhiteSpace(master.DisplayName) && !string.IsNullOrWhiteSpace(legacy.DisplayName))
-            master.SetDisplayName(legacy.DisplayName!);
-        else if (string.IsNullOrWhiteSpace(master.DisplayName))
-            master.SetDisplayName(legacy.ExternalId);
+        // Nazwa z aktualnego topicu Z2M (np. Dieffenbachia), nie ze starego ExternalId legacy (np. Koło balkonu).
+        await ApplyDisplayNameFromLatestMqttTopicAsync(masterId, master, legacy.ExternalId, ct);
 
         _db.Sensors.Remove(legacy);
         await _db.SaveChangesAsync(ct);
+    }
+
+    /// <summary>
+    /// Ustawia nazwę wyświetlaną z <c>zigbee2mqtt/&lt;friendly&gt;</c> ostatniego odczytu, z fallbackiem.
+    /// </summary>
+    private async Task ApplyDisplayNameFromLatestMqttTopicAsync(
+        Guid sensorIdForReadings,
+        Sensor sensor,
+        string? legacyExternalIdFallback,
+        CancellationToken ct)
+    {
+        var latestTopic = await _db.SensorReadings.AsNoTracking()
+            .Where(r => r.SensorId == sensorIdForReadings)
+            .OrderByDescending(r => r.ReceivedAtUtc)
+            .Select(r => r.Topic)
+            .FirstOrDefaultAsync(ct);
+
+        var fromTopic = TryGetFriendlyNameFromMqttTopic(latestTopic);
+        if (!string.IsNullOrWhiteSpace(fromTopic))
+        {
+            sensor.SetDisplayName(fromTopic);
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(sensor.DisplayName) && !string.IsNullOrWhiteSpace(legacyExternalIdFallback))
+        {
+            if (!ZigbeeIeeeAddress.IsCanonicalStoredExternalId(legacyExternalIdFallback))
+                sensor.SetDisplayName(legacyExternalIdFallback);
+        }
+    }
+
+    /// <summary>Tylko pełny stan <c>zigbee2mqtt/nazwa</c> — bez podtematów.</summary>
+    internal static string? TryGetFriendlyNameFromMqttTopic(string? topic)
+    {
+        if (string.IsNullOrWhiteSpace(topic))
+            return null;
+
+        const string prefix = "zigbee2mqtt/";
+        if (!topic.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            return null;
+
+        var rest = topic[prefix.Length..].Trim();
+        if (rest.Length == 0 || rest.Contains('/'))
+            return null;
+
+        return rest;
     }
 }

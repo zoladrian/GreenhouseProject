@@ -1,8 +1,11 @@
 import ReactECharts from 'echarts-for-react';
 import type { MoisturePoint, WateringEventDto, WateringInferredKind } from '../api/client';
+import { moisturePointSeriesKey, resolveSeriesLegendName, sortPointsByTime, uniqueSeriesKeys } from '../utils/chartSeries';
 
 interface Props {
   points: MoisturePoint[];
+  /** Mapa sensorId → etykieta (np. displayName z nawy); scala serie po zmianie nazwy w Z2M. */
+  sensorLegendById?: Record<string, string>;
   wateringEvents?: WateringEventDto[];
   title?: string;
   /** Poniżej — strefa „podlej”; na wykresie jako linia pomarańczowa. */
@@ -22,12 +25,12 @@ function kindVisual(kind: WateringInferredKind | string | undefined) {
   }
 }
 
-export function MoistureChart({ points, wateringEvents = [], title, moistureMin, moistureMax }: Props) {
+export function MoistureChart({ points, sensorLegendById, wateringEvents = [], title, moistureMin, moistureMax }: Props) {
   if (points.length === 0) {
     return <p style={{ color: '#9ca3af', textAlign: 'center' }}>Brak danych do wykresu</p>;
   }
 
-  const sensors = [...new Set(points.map((p) => p.sensorIdentifier))];
+  const seriesKeys = uniqueSeriesKeys(points);
 
   const thresholdLines =
     moistureMin != null || moistureMax != null
@@ -70,23 +73,27 @@ export function MoistureChart({ points, wateringEvents = [], title, moistureMin,
         })
       : [];
 
-  const series = sensors.map((name, idx) => ({
-    name,
-    type: 'line' as const,
-    smooth: true,
-    symbol: 'none',
-    data: points
-      .filter((p) => p.sensorIdentifier === name && p.soilMoisture !== null)
-      .map((p) => [p.utcTime, p.soilMoisture]),
-    markLine:
-      idx === 0 && (thresholdLines.length > 0 || wateringVertLines.length > 0)
-        ? {
-            symbol: 'none',
-            data: [...thresholdLines, ...wateringVertLines],
-            silent: false,
-          }
-        : undefined,
-  }));
+  const series = seriesKeys.map((key, idx) => {
+    const forSeries = sortPointsByTime(
+      points.filter((p) => moisturePointSeriesKey(p) === key && p.soilMoisture !== null),
+    );
+    const legendName = resolveSeriesLegendName(key, forSeries, sensorLegendById);
+    return {
+      name: legendName,
+      type: 'line' as const,
+      smooth: true,
+      symbol: 'none',
+      data: forSeries.map((p) => [p.utcTime, p.soilMoisture]),
+      markLine:
+        idx === 0 && (thresholdLines.length > 0 || wateringVertLines.length > 0)
+          ? {
+              symbol: 'none',
+              data: [...thresholdLines, ...wateringVertLines],
+              silent: false,
+            }
+          : undefined,
+    };
+  });
 
   const option = {
     title: title ? { text: title, left: 'center', textStyle: { fontSize: 14 } } : undefined,

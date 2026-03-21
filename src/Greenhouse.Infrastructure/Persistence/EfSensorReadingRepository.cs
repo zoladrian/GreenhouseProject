@@ -92,4 +92,36 @@ public sealed class EfSensorReadingRepository : ISensorReadingRepository
 
         return null;
     }
+
+    public async Task<int> AlignSensorIdentifierForSensorAsync(
+        Guid sensorId,
+        string externalId,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(externalId))
+            return 0;
+
+        var trimmed = externalId.Trim();
+        return await _dbContext.SensorReadings
+            .Where(r => r.SensorId == sensorId && r.SensorIdentifier != trimmed)
+            .ExecuteUpdateAsync(
+                s => s.SetProperty(r => r.SensorIdentifier, trimmed),
+                cancellationToken);
+    }
+
+    public async Task<int> AlignAllLinkedReadingSensorIdentifiersAsync(CancellationToken cancellationToken)
+    {
+        // Jedna linia z Sensors.ExternalId — nie zależy od nazwy z topicu MQTT (friendly name).
+        return await _dbContext.Database.ExecuteSqlRawAsync(
+            """
+            UPDATE SensorReadings
+            SET SensorIdentifier = (SELECT ExternalId FROM Sensors WHERE Id = SensorReadings.SensorId)
+            WHERE SensorId IS NOT NULL
+              AND EXISTS (
+                SELECT 1 FROM Sensors s
+                WHERE s.Id = SensorReadings.SensorId
+                  AND s.ExternalId != SensorReadings.SensorIdentifier)
+            """,
+            cancellationToken);
+    }
 }

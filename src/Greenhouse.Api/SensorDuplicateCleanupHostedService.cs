@@ -31,6 +31,7 @@ public sealed class SensorDuplicateCleanupHostedService : IHostedService
             await Task.Delay(TimeSpan.FromSeconds(4), appStopping);
             await using var scope = _serviceProvider.CreateAsyncScope();
             var merger = scope.ServiceProvider.GetRequiredService<ISensorDuplicateMerger>();
+            var readings = scope.ServiceProvider.GetRequiredService<ISensorReadingRepository>();
             var result = await merger.MergeAsync(appStopping);
             if (result.MergedLegacySensors > 0 || result.RekeyedLegacySensors > 0)
             {
@@ -38,6 +39,14 @@ public sealed class SensorDuplicateCleanupHostedService : IHostedService
                     "Czyszczenie duplikatów czujników zakończone: scalenia={Merges}, rekey na IEEE={Rekeys}",
                     result.MergedLegacySensors,
                     result.RekeyedLegacySensors);
+            }
+
+            var aligned = await readings.AlignAllLinkedReadingSensorIdentifiersAsync(appStopping);
+            if (aligned > 0)
+            {
+                _logger.LogInformation(
+                    "Zsynchronizowano identyfikator w {Count} odczytach z ExternalId czujników (friendly name nie rozszczepia historii).",
+                    aligned);
             }
         }
         catch (OperationCanceledException) when (appStopping.IsCancellationRequested)

@@ -1,18 +1,20 @@
 import ReactECharts from 'echarts-for-react';
 import type { MoisturePoint } from '../api/client';
+import { moisturePointSeriesKey, resolveSeriesLegendName, sortPointsByTime, uniqueSeriesKeys } from '../utils/chartSeries';
 
 interface Props {
   points: MoisturePoint[];
+  sensorLegendById?: Record<string, string>;
   temperatureMin?: number | null;
   temperatureMax?: number | null;
 }
 
-export function TemperatureChart({ points, temperatureMin, temperatureMax }: Props) {
+export function TemperatureChart({ points, sensorLegendById, temperatureMin, temperatureMax }: Props) {
   if (points.length === 0) {
     return <p style={{ color: '#9ca3af', textAlign: 'center' }}>Brak danych temperatury</p>;
   }
 
-  const sensors = [...new Set(points.map((p) => p.sensorIdentifier))];
+  const seriesKeys = uniqueSeriesKeys(points);
 
   const thresholdLines =
     temperatureMin != null || temperatureMax != null
@@ -38,19 +40,23 @@ export function TemperatureChart({ points, temperatureMin, temperatureMax }: Pro
         ]
       : [];
 
-  const series = sensors.map((name, idx) => ({
-    name,
-    type: 'line' as const,
-    smooth: true,
-    symbol: 'none',
-    data: points
-      .filter((p) => p.sensorIdentifier === name && p.temperature !== null)
-      .map((p) => [p.utcTime, p.temperature]),
-    markLine:
-      idx === 0 && thresholdLines.length > 0
-        ? { symbol: 'none', data: thresholdLines, silent: true }
-        : undefined,
-  }));
+  const series = seriesKeys.map((key, idx) => {
+    const forSeries = sortPointsByTime(
+      points.filter((p) => moisturePointSeriesKey(p) === key && p.temperature !== null),
+    );
+    const legendName = resolveSeriesLegendName(key, forSeries, sensorLegendById);
+    return {
+      name: legendName,
+      type: 'line' as const,
+      smooth: true,
+      symbol: 'none',
+      data: forSeries.map((p) => [p.utcTime, p.temperature]),
+      markLine:
+        idx === 0 && thresholdLines.length > 0
+          ? { symbol: 'none', data: thresholdLines, silent: true }
+          : undefined,
+    };
+  });
 
   const option = {
     title: { text: 'Temperatura', left: 'center', textStyle: { fontSize: 14 } },

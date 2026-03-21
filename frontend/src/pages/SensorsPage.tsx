@@ -26,6 +26,7 @@ export function SensorsPage() {
 
   const [assigningId, setAssigningId] = useState<string | null>(null);
   const [assignError, setAssignError] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const onAssignChange = useCallback(
     async (sensorId: string, value: string) => {
@@ -63,7 +64,8 @@ export function SensorsPage() {
       <p style={{ color: '#64748b', fontSize: 13, marginBottom: 14, lineHeight: 1.45 }}>
         Czujniki pojawiają się po pierwszej wiadomości MQTT ze stanem urządzenia (Zigbee2MQTT → Mosquitto).{' '}
         <strong>Przypisz czujnik do nawy</strong>, żeby wilgotność była widoczna na{' '}
-        <Link to="/">Dashboardzie</Link> i w wykresach nawy.
+        <Link to="/">Pulpicie</Link> i w wykresach nawy. Lista to rekordy w bazie — stare lub zdublowane wpisy
+        (np. po zmianie nazwy w Z2M) możesz <strong>usunąć</strong>, jeśli nie odpowiadają już żadnemu urządzeniu.
       </p>
 
       {assignError && (
@@ -147,6 +149,42 @@ export function SensorsPage() {
               Nawy: <strong>{nawaNameById.get(s.nawaId) ?? s.nawaId}</strong>
             </p>
           )}
+
+          <div style={{ marginTop: 12 }}>
+            <button
+              type="button"
+              disabled={deletingId === s.sensorId}
+              onClick={async () => {
+                if (
+                  !window.confirm(
+                    'Usunąć ten wpis czujnika z bazy?\n\nStarsze odczyty zostaną bez powiązania (historia nie znika). Urządzenie w Zigbee2MQTT się nie zmieni — to tylko lokalny rekord aplikacji.',
+                  )
+                )
+                  return;
+                setAssignError(null);
+                setDeletingId(s.sensorId);
+                try {
+                  await api.deleteSensor(s.sensorId);
+                  await refetch();
+                } catch (e) {
+                  setAssignError(e instanceof Error ? e.message : 'Nie udało się usunąć');
+                } finally {
+                  setDeletingId(null);
+                }
+              }}
+              style={{
+                fontSize: 12,
+                padding: '6px 10px',
+                borderRadius: 8,
+                border: '1px solid #fecaca',
+                background: '#fff',
+                color: '#b91c1c',
+                cursor: 'pointer',
+              }}
+            >
+              {deletingId === s.sensorId ? 'Usuwanie…' : 'Usuń z listy aplikacji'}
+            </button>
+          </div>
         </div>
       ))}
     </div>

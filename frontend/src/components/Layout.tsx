@@ -6,7 +6,7 @@ const logoPng = '/images/kwiaty-polskie-logo.png';
 const logoFallback = '/images/kwiaty-polskie-logo.svg';
 
 const navItems = [
-  { to: '/', label: 'Dashboard' },
+  { to: '/', label: 'Pulpit' },
   { to: '/nawy', label: 'Nawy' },
   { to: '/sensory', label: 'Sensory' },
   { to: '/zdrowie', label: 'Zdrowie' },

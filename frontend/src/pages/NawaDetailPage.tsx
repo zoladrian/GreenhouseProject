@@ -1,6 +1,7 @@
 import { useParams } from 'react-router-dom';
 import { api } from '../api/client';
 import { useFetch } from '../hooks/useFetch';
+import { speakPolish } from '../hooks/useTts';
 import { MoistureChart } from '../components/MoistureChart';
 import { TemperatureChart } from '../components/TemperatureChart';
 import { BatteryChart } from '../components/BatteryChart';
@@ -57,6 +58,8 @@ export function NawaDetailPage() {
   const [temperatureMax, setTemperatureMax] = useState('');
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState<string | null>(null);
+  const [voiceBriefLoading, setVoiceBriefLoading] = useState(false);
+  const [voiceBriefError, setVoiceBriefError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!detail) return;
@@ -69,6 +72,14 @@ export function NawaDetailPage() {
     setTemperatureMin(detail.temperatureMin != null ? String(detail.temperatureMin) : '');
     setTemperatureMax(detail.temperatureMax != null ? String(detail.temperatureMax) : '');
   }, [detail]);
+
+  /** Jedna seria na wykresie na czujnik — scala stare i nowe `sensorIdentifier` z MQTT po zmianie nazwy w Z2M. */
+  const sensorLegendById = useMemo(() => {
+    if (!detail?.sensors?.length) return undefined;
+    return Object.fromEntries(
+      detail.sensors.map((s) => [s.id, s.displayName?.trim() || s.externalId || s.id]),
+    );
+  }, [detail?.sensors]);
 
   const startCustomRange = () => {
     const end = new Date();
@@ -120,7 +131,13 @@ export function NawaDetailPage() {
     }
   }
 
-  if (loading || !detail) return <p>Ładowanie...</p>;
+  if (loading || !detail) {
+    return (
+      <div className="nawy-page nawy-page--detail">
+        <p className="nawy-page__loading">Ładowanie...</p>
+      </div>
+    );
+  }
 
   const qrUrl = `${window.location.origin}/nawy/${id}`;
 
@@ -130,10 +147,13 @@ export function NawaDetailPage() {
   const tMaxNum = detail.temperatureMax;
 
   return (
-    <div>
-      <h2 style={{ fontSize: 20, marginBottom: 4 }}>{detail.name}</h2>
-      {detail.plantNote && <p style={{ color: '#64748b', margin: '0 0 8px', fontSize: 14 }}>🌿 {detail.plantNote}</p>}
-      {detail.description && <p style={{ color: '#94a3b8', margin: '0 0 12px', fontSize: 13 }}>{detail.description}</p>}
+    <div className="nawy-page nawy-page--detail">
+      <div className="nawy-page__inner">
+      <header className="nawa-detail-header">
+        <h2 className="nawy-page__title">{detail.name}</h2>
+        {detail.plantNote && <p className="nawa-detail-sub">🌿 {detail.plantNote}</p>}
+        {detail.description && <p className="nawa-detail-desc">{detail.description}</p>}
+      </header>
 
       <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 16 }}>
         <InfoCard
@@ -147,13 +167,45 @@ export function NawaDetailPage() {
         <InfoCard label="Sensory" value={String(detail.sensors.length)} />
       </div>
 
+      <div style={{ marginBottom: 16 }}>
+        <button
+          type="button"
+          className="btn-primary"
+          disabled={voiceBriefLoading || !id}
+          style={{ width: '100%', padding: '12px 16px', fontSize: 15, fontWeight: 600 }}
+          onClick={async () => {
+            if (!id) return;
+            setVoiceBriefError(null);
+            setVoiceBriefLoading(true);
+            try {
+              const brief = await api.getNawaVoiceBrief(id);
+              speakPolish(brief.spokenText);
+            } catch (e) {
+              setVoiceBriefError(e instanceof Error ? e.message : 'Błąd pobierania podsumowania');
+            } finally {
+              setVoiceBriefLoading(false);
+            }
+          }}
+        >
+          {voiceBriefLoading ? 'Ładowanie…' : 'Odczytaj stan nawy (głos, szczegóły)'}
+        </button>
+        <p className="nawa-voice-hint" style={{ fontSize: 11, margin: '6px 0 0', lineHeight: 1.35 }}>
+          Krótki opis po polsku: status wilgotności, progi, ewentualna anomalia temperatury oraz — gdy da się to oszacować z historii —{' '}
+          <strong>od kiedy</strong> utrzymuje się alarm (okno ok. 72 godzin).
+        </p>
+        {voiceBriefError && (
+          <p style={{ color: '#d32f2f', fontSize: 13, marginTop: 6 }} role="alert">
+            {voiceBriefError}
+          </p>
+        )}
+      </div>
+
       <section
+        className="nawa-glass"
         style={{
-          background: '#fff',
           borderRadius: 12,
           padding: 16,
           marginBottom: 16,
-          boxShadow: '0 1px 3px rgba(0,0,0,.08)',
         }}
       >
         <h3 style={{ fontSize: 15, marginBottom: 10 }}>Ustawienia nawy i progi</h3>
@@ -275,15 +327,27 @@ export function NawaDetailPage() {
         </p>
       </section>
 
-      <MoistureChart
-        points={points ?? []}
-        wateringEvents={wateringEvents ?? []}
-        title="Wilgotność gleby"
-        moistureMin={mMinNum}
-        moistureMax={mMaxNum}
-      />
-      <TemperatureChart points={points ?? []} temperatureMin={tMinNum} temperatureMax={tMaxNum} />
-      <BatteryChart points={points ?? []} />
+      <div className="nawa-glass nawa-chart-shell">
+        <MoistureChart
+          points={points ?? []}
+          sensorLegendById={sensorLegendById}
+          wateringEvents={wateringEvents ?? []}
+          title="Wilgotność gleby"
+          moistureMin={mMinNum}
+          moistureMax={mMaxNum}
+        />
+      </div>
+      <div className="nawa-glass nawa-chart-shell">
+        <TemperatureChart
+          points={points ?? []}
+          sensorLegendById={sensorLegendById}
+          temperatureMin={tMinNum}
+          temperatureMax={tMaxNum}
+        />
+      </div>
+      <div className="nawa-glass nawa-chart-shell">
+        <BatteryChart points={points ?? []} sensorLegendById={sensorLegendById} />
+      </div>
 
       {dryingRates && dryingRates.length > 0 && (
         <div style={{ background: '#fff', borderRadius: 12, padding: 16, marginTop: 12, boxShadow: '0 1px 3px rgba(0,0,0,.08)' }}>
@@ -297,7 +361,7 @@ export function NawaDetailPage() {
       )}
 
       {wateringEvents && wateringEvents.length > 0 && (
-        <div style={{ background: '#fff', borderRadius: 12, padding: 16, marginTop: 12, boxShadow: '0 1px 3px rgba(0,0,0,.08)' }}>
+        <div className="nawa-glass" style={{ borderRadius: 12, padding: 16, marginTop: 12 }}>
           <h3 style={{ fontSize: 14, marginBottom: 8 }}>Skoki wilgotności (podlanie / deszcz?)</h3>
           {wateringEvents.map((e, i) => {
             const kindLabel =
@@ -349,6 +413,7 @@ export function NawaDetailPage() {
           {s.displayName && <div style={{ fontSize: 11, color: '#94a3b8' }}>{s.externalId}</div>}
         </div>
       ))}
+      </div>
     </div>
   );
 }
@@ -381,7 +446,7 @@ const btnGhost: CSSProperties = {
 
 function InfoCard({ label, value }: { label: string; value: string }) {
   return (
-    <div style={{ background: '#fff', borderRadius: 8, padding: '8px 12px', boxShadow: '0 1px 2px rgba(0,0,0,.05)' }}>
+    <div className="nawa-glass" style={{ borderRadius: 8, padding: '8px 12px' }}>
       <div style={{ fontSize: 11, color: '#94a3b8' }}>{label}</div>
       <div style={{ fontSize: 14, fontWeight: 600 }}>{value}</div>
     </div>

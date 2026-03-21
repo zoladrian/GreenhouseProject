@@ -1,20 +1,31 @@
 import ReactECharts from 'echarts-for-react';
 import type { MoisturePoint } from '../api/client';
+import { moisturePointSeriesKey, resolveSeriesLegendName, sortPointsByTime, uniqueSeriesKeys } from '../utils/chartSeries';
 
-export function BatteryChart({ points }: { points: MoisturePoint[] }) {
+export function BatteryChart({
+  points,
+  sensorLegendById,
+}: {
+  points: MoisturePoint[];
+  sensorLegendById?: Record<string, string>;
+}) {
   if (points.length === 0) return null;
 
-  const sensors = [...new Set(points.map((p) => p.sensorIdentifier))];
+  const seriesKeys = uniqueSeriesKeys(points);
 
-  const series = sensors.map((name) => ({
-    name,
-    type: 'line' as const,
-    smooth: true,
-    symbol: 'none',
-    data: points
-      .filter((p) => p.sensorIdentifier === name && p.battery !== null)
-      .map((p) => [p.utcTime, p.battery]),
-  }));
+  const series = seriesKeys.map((key) => {
+    const forSeries = sortPointsByTime(
+      points.filter((p) => moisturePointSeriesKey(p) === key && p.battery !== null),
+    );
+    const legendName = resolveSeriesLegendName(key, forSeries, sensorLegendById);
+    return {
+      name: legendName,
+      type: 'line' as const,
+      smooth: true,
+      symbol: 'none',
+      data: forSeries.map((p) => [p.utcTime, p.battery]),
+    };
+  });
 
   const option = {
     title: { text: 'Bateria', left: 'center', textStyle: { fontSize: 14 } },

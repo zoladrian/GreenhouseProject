@@ -33,6 +33,8 @@ export function buildVoiceDailyReportText(r: VoiceDailyReportDto): string {
         parts.push('Brak danych o wilgotności gleby od północy.');
       }
     }
+    parts.push(n.moistureAssessment);
+    parts.push(n.temperatureAssessment);
   }
 
   parts.push('Miłego dnia.');

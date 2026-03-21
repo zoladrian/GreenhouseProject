@@ -31,6 +31,31 @@ public sealed class MqttMessageIngestionServiceTests
     }
 
     [Fact]
+    public async Task IngestAsync_ShouldPersistNormalizedIeee_AsSensorIdentifier_WhenPresentInPayload()
+    {
+        const string ieee = "0x00158d0001a2b3c4";
+        var parser = new FakeParser(new ParsedSensorPayload(10m, 21.2m, 99, 200, ieee));
+        var repository = new InMemoryReadingRepository();
+        var provisioning = new FixedProvisioning(Guid.Parse("44444444-4444-4444-4444-444444444444"));
+        var sut = new MqttMessageIngestionService(
+            parser,
+            repository,
+            provisioning,
+            Microsoft.Extensions.Logging.Abstractions.NullLogger<MqttMessageIngestionService>.Instance,
+            new MqttIngestTelemetry());
+
+        var message = new IncomingMqttMessage(
+            "zigbee2mqtt/Alocasia",
+            $"{{\"ieee_address\":\"{ieee}\",\"soil_moisture\":10,\"temperature\":21.2,\"battery\":99,\"linkquality\":200}}",
+            DateTime.UtcNow);
+
+        await sut.IngestAsync(message, CancellationToken.None);
+
+        Assert.Single(repository.Items);
+        Assert.Equal(ieee, repository.Items[0].SensorIdentifier);
+    }
+
+    [Fact]
     public async Task IngestAsync_ShouldIgnoreAvailabilitySubtopic()
     {
         var parser = new FakeParser(new ParsedSensorPayload(null, null, null, null));
@@ -143,5 +168,11 @@ public sealed class MqttMessageIngestionServiceTests
 
         public Task<string?> TryGetNormalizedIeeeFromLatestReadingAsync(Guid sensorId, CancellationToken cancellationToken) =>
             Task.FromResult<string?>(null);
+
+        public Task<int> AlignSensorIdentifierForSensorAsync(Guid sensorId, string externalId, CancellationToken cancellationToken) =>
+            Task.FromResult(0);
+
+        public Task<int> AlignAllLinkedReadingSensorIdentifiersAsync(CancellationToken cancellationToken) =>
+            Task.FromResult(0);
     }
 }

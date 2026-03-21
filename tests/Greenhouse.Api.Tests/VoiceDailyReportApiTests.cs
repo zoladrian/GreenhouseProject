@@ -37,5 +37,7 @@ public sealed class VoiceDailyReportApiTests : IClassFixture<GreenhouseWebApplic
         var line = Assert.Single(dto.Nawy, n => n.NawaName == "Raport nawa");
         Assert.Equal(1, line.Order);
         Assert.Equal(0, line.AssignedSensorCount);
+        Assert.False(string.IsNullOrWhiteSpace(line.MoistureAssessment));
+        Assert.False(string.IsNullOrWhiteSpace(line.TemperatureAssessment));
     }
 }

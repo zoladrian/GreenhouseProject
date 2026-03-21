@@ -1,7 +1,9 @@
 import { BrandedImg } from './BrandedImg';
 
-const heroPng = '/images/kwiaty-polskie-hero.png';
-const heroFallback = '/images/kwiaty-polskie-greenhouse.svg';
+/** Baner z petuniami + „KWIATY POLSKIE”; potem poprzednie zdjęcie szklarni (to samo co tło pulpitu), na końcu SVG. */
+const heroPng = '/images/kwiaty-polskie-petunias-banner.png';
+const heroFallback = '/images/kwiaty-polskie-hero.png';
+const heroSvgFallback = '/images/kwiaty-polskie-greenhouse.svg';
 const logoPng = '/images/kwiaty-polskie-logo.png';
 const logoFallback = '/images/kwiaty-polskie-logo.svg';
 
@@ -13,7 +15,8 @@ export function DashboardHero() {
           className="dashboard-hero__image"
           src={heroPng}
           fallbackSrc={heroFallback}
-          alt="Kwiaty Polskie — szklarnia i ekspozycja"
+          fallbackSrc2={heroSvgFallback}
+          alt="Kwiaty Polskie — petunie"
           width={800}
           height={320}
           decoding="async"

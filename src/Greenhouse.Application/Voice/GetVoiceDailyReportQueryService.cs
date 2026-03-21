@@ -47,7 +47,11 @@ public sealed class GetVoiceDailyReportQueryService
             var sensorIds = allSensors.Where(s => s.NawaId == nawa.Id).Select(s => s.Id).ToList();
             if (sensorIds.Count == 0)
             {
-                lines.Add(new NawaVoiceLineDto(order, nawa.Name, null, null, 0, 0));
+                var (m0, t0) = VoiceAssessmentTexts.DailyAverages(
+                    null, null,
+                    nawa.MoistureMin, nawa.MoistureMax, nawa.TemperatureMin, nawa.TemperatureMax,
+                    0, 0);
+                lines.Add(new NawaVoiceLineDto(order, nawa.Name, null, null, 0, 0, m0, t0));
                 continue;
             }
 
@@ -58,7 +62,12 @@ public sealed class GetVoiceDailyReportQueryService
             var avgM = moistures.Count > 0 ? Math.Round(moistures.Average(), 1) : (decimal?)null;
             var avgT = temps.Count > 0 ? Math.Round(temps.Average(), 1) : (decimal?)null;
 
-            lines.Add(new NawaVoiceLineDto(order, nawa.Name, avgT, avgM, readings.Count, sensorIds.Count));
+            var (m, t) = VoiceAssessmentTexts.DailyAverages(
+                avgM, avgT,
+                nawa.MoistureMin, nawa.MoistureMax, nawa.TemperatureMin, nawa.TemperatureMax,
+                sensorIds.Count, readings.Count);
+
+            lines.Add(new NawaVoiceLineDto(order, nawa.Name, avgT, avgM, readings.Count, sensorIds.Count, m, t));
         }
 
         var leadin = string.IsNullOrWhiteSpace(_voice.GreetingLeadin) ? "Dzień dobry" : _voice.GreetingLeadin.Trim();
