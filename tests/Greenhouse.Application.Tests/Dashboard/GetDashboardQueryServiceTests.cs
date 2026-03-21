@@ -1,14 +1,33 @@
 using Greenhouse.Application.Abstractions;
+using Greenhouse.Application.Charts;
 using Greenhouse.Application.Nawy;
+using Greenhouse.Application.Voice;
 using Greenhouse.Domain.Nawy;
 using Greenhouse.Domain.SensorReadings;
 using Greenhouse.Domain.Sensors;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 
 namespace Greenhouse.Application.Tests.Dashboard;
 
 public sealed class GetDashboardQueryServiceTests
 {
+    private static GetDashboardQueryService CreateSut(
+        InMemoryNawaRepo nawaRepo,
+        InMemorySensorRepo sensorRepo,
+        InMemoryReadingRepo readingRepo)
+    {
+        var voice = Options.Create(new VoiceOptions());
+        var watering = new GetWateringEventsQueryService(sensorRepo, readingRepo);
+        return new GetDashboardQueryService(
+            nawaRepo,
+            sensorRepo,
+            readingRepo,
+            NullLogger<GetDashboardQueryService>.Instance,
+            voice,
+            watering);
+    }
+
     [Fact]
     public async Task Dashboard_ShouldReturnNoData_WhenNoSensors()
     {
@@ -19,7 +38,7 @@ public sealed class GetDashboardQueryServiceTests
         var nawa = Nawa.Create("Nawa A", null);
         await nawaRepo.AddAsync(nawa, CancellationToken.None);
 
-        var sut = new GetDashboardQueryService(nawaRepo, sensorRepo, readingRepo, NullLogger<GetDashboardQueryService>.Instance);
+        var sut = CreateSut(nawaRepo, sensorRepo, readingRepo);
         var result = await sut.ExecuteAsync(CancellationToken.None);
 
         Assert.Single(result);
@@ -49,7 +68,7 @@ public sealed class GetDashboardQueryServiceTests
         readingRepo.Add(SensorReading.Create("sensor-1", DateTime.UtcNow.AddMinutes(-5), "t", "{}", 40m, 22m, 95, 100, sensor1.Id));
         readingRepo.Add(SensorReading.Create("sensor-2", DateTime.UtcNow.AddMinutes(-3), "t", "{}", 60m, 24m, 80, 120, sensor2.Id));
 
-        var sut = new GetDashboardQueryService(nawaRepo, sensorRepo, readingRepo, NullLogger<GetDashboardQueryService>.Instance);
+        var sut = CreateSut(nawaRepo, sensorRepo, readingRepo);
         var result = await sut.ExecuteAsync(CancellationToken.None);
 
         Assert.Single(result);
@@ -84,7 +103,7 @@ public sealed class GetDashboardQueryServiceTests
         readingRepo.Add(SensorReading.Create("s-a", DateTime.UtcNow.AddMinutes(-5), "t", "{}", 10m, 22m, 95, 100, sensor1.Id));
         readingRepo.Add(SensorReading.Create("s-b", DateTime.UtcNow.AddMinutes(-3), "t", "{}", 85m, 22m, 95, 100, sensor2.Id));
 
-        var sut = new GetDashboardQueryService(nawaRepo, sensorRepo, readingRepo, NullLogger<GetDashboardQueryService>.Instance);
+        var sut = CreateSut(nawaRepo, sensorRepo, readingRepo);
         var result = await sut.ExecuteAsync(CancellationToken.None);
 
         Assert.Single(result);

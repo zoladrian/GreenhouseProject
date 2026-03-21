@@ -13,6 +13,12 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.ConfigureHttpJsonOptions(options =>
+{
+    options.SerializerOptions.Converters.Add(new JsonUtcDateTimeConverter());
+    options.SerializerOptions.Converters.Add(new JsonUtcNullableDateTimeConverter());
+});
+
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddHostedService<SensorDuplicateCleanupHostedService>();

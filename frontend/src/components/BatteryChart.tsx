@@ -1,6 +1,7 @@
 import ReactECharts from 'echarts-for-react';
 import type { MoisturePoint } from '../api/client';
 import { moisturePointSeriesKey, resolveSeriesLegendName, sortPointsByTime, uniqueSeriesKeys } from '../utils/chartSeries';
+import { echartsAxisTooltipPl, echartsTimeXAxisPl, utcIsoToMs } from '../utils/chartTimePl';
 
 export function BatteryChart({
   points,
@@ -23,15 +24,15 @@ export function BatteryChart({
       type: 'line' as const,
       smooth: true,
       symbol: 'none',
-      data: forSeries.map((p) => [p.utcTime, p.battery]),
+      data: forSeries.map((p) => [utcIsoToMs(p.utcTime), p.battery]),
     };
   });
 
   const option = {
     title: { text: 'Bateria', left: 'center', textStyle: { fontSize: 14 } },
-    tooltip: { trigger: 'axis' as const },
+    tooltip: echartsAxisTooltipPl(),
     legend: { bottom: 0, textStyle: { fontSize: 11 } },
-    xAxis: { type: 'time' as const },
+    xAxis: echartsTimeXAxisPl(),
     yAxis: { type: 'value' as const, name: '%', min: 0, max: 100 },
     grid: { left: 50, right: 16, top: 40, bottom: 40 },
     series,

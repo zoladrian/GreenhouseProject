@@ -43,10 +43,10 @@ internal static class VoiceAssessmentTexts
 
         var a = avg.Value;
         if (minTh.HasValue && a < minTh.Value)
-            return $"Uwaga, anomalia wilgotności: średnia od północy {Fmt(a)} procent jest poniżej progu podlania {Fmt(minTh.Value)} procent.";
+            return $"Uwaga, anomalia wilgotności. Średnia od północy to {Fmt(a)} procent, czyli poniżej progu podlania, który wynosi {Fmt(minTh.Value)} procent.";
 
         if (maxTh.HasValue && a > maxTh.Value)
-            return $"Uwaga, anomalia wilgotności: średnia od północy {Fmt(a)} procent przekracza próg za mokro {Fmt(maxTh.Value)} procent.";
+            return $"Uwaga, anomalia wilgotności. Średnia od północy to {Fmt(a)} procent, czyli powyżej progu za mokro, który wynosi {Fmt(maxTh.Value)} procent.";
 
         return "Wilgotność poprawna.";
     }
@@ -61,10 +61,10 @@ internal static class VoiceAssessmentTexts
 
         var a = avg.Value;
         if (minTh.HasValue && a < minTh.Value)
-            return $"Uwaga, anomalia temperatury: średnia od północy {Fmt(a)} stopni jest poniżej progu {Fmt(minTh.Value)} stopni Celsjusza.";
+            return $"Uwaga, anomalia temperatury. Średnia od północy to {Fmt(a)} stopni Celsjusza, a próg dolny to {Fmt(minTh.Value)} stopni.";
 
         if (maxTh.HasValue && a > maxTh.Value)
-            return $"Uwaga, anomalia temperatury: średnia od północy {Fmt(a)} stopni przekracza próg {Fmt(maxTh.Value)} stopni Celsjusza.";
+            return $"Uwaga, anomalia temperatury. Średnia od północy to {Fmt(a)} stopni Celsjusza, a próg górny to {Fmt(maxTh.Value)} stopni.";
 
         return "Temperatura poprawna.";
     }

@@ -130,6 +130,33 @@ internal static class VoiceNawaTimeline
         return lastOkHour is null ? startHour : lastOkHour.Value.AddHours(1);
     }
 
+    /// <summary>
+    /// Liczy, ile pełnych minut z rzędu wstecz od <paramref name="utcNow"/> stan „najwyższa wilgotność &gt; próg” jest spełniony.
+    /// Gdy w danym momencie brakuje odczytu (null), nie uznajemy suchego — ciąg uznajemy za trwający, aż do limitu lookback.
+    /// Zwraca <c>maxLookbackMinutes + 1</c>, jeśli w całym oknie nie znaleziono suchego.
+    /// </summary>
+    public static int EstimateContinuousTooWetMinutesFromNow(
+        Dictionary<Guid, List<SensorReading>> perSensor,
+        IReadOnlyList<Guid> sensorIdsWithMoisture,
+        decimal maxThreshold,
+        DateTime utcNow,
+        int maxLookbackMinutes = 240)
+    {
+        var atNow = MaxMoistureAt(perSensor, sensorIdsWithMoisture, utcNow);
+        if (atNow is null || atNow <= maxThreshold)
+            return 0;
+
+        for (var m = 0; m <= maxLookbackMinutes; m++)
+        {
+            var t = utcNow.AddMinutes(-m);
+            var maxM = MaxMoistureAt(perSensor, sensorIdsWithMoisture, t);
+            if (maxM.HasValue && maxM.Value <= maxThreshold)
+                return m;
+        }
+
+        return maxLookbackMinutes + 1;
+    }
+
     public static DateTime? EstimateTemperatureOutOfRangeSinceUtc(
         Dictionary<Guid, List<SensorReading>> perSensor,
         IReadOnlyList<Guid> sensorIds,

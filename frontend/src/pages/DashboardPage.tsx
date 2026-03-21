@@ -7,6 +7,7 @@ import { buildVoiceDailyReportText } from '../voice/voiceDailyReportText';
 import { StatusBadge } from '../components/StatusBadge';
 import { BatteryIcon } from '../components/BatteryIcon';
 import { DashboardHero } from '../components/DashboardHero';
+import { DashboardPageBackdrop } from '../components/DashboardPageBackdrop';
 
 export function DashboardPage() {
   const { data, loading, refetch } = useFetch(() => api.getDashboard());
@@ -24,12 +25,22 @@ export function DashboardPage() {
     if (!data) return;
     const dry = data.filter((s) => s.status === 2);
     if (dry.length > 0) {
-      tts.speak(`Uwaga! ${dry.length} naw wymaga podlania: ${dry.map((s) => s.nawaName).join(', ')}`);
+      const intro =
+        dry.length === 1 ? 'Uwaga, potrzebne podlanie w nawie.' : 'Uwaga, potrzebne podlanie w kilku nawach.';
+      const parts = dry.map((s) => {
+        const note = s.wateringSpeechNote?.trim();
+        return note ? `${s.nawaName}. ${note}` : s.nawaName;
+      });
+      tts.speak(`${intro} ${parts.join(' Następna nawa: ')}`);
     }
     const conflict = data.filter((s) => s.status === 4);
     if (conflict.length > 0) {
+      const parts = conflict.map((s) => {
+        const note = s.wateringSpeechNote?.trim();
+        return note ? `${s.nawaName}. ${note}` : s.nawaName;
+      });
       tts.speak(
-        `Uwaga! Sprzeczne odczyty wilgotności w ${conflict.length} nawach: ${conflict.map((s) => s.nawaName).join(', ')}. Sprawdź czujniki.`,
+        `Uwaga, sprzeczne odczyty wilgotności w ${conflict.length} nawach: ${parts.join(' Następna nawa: ')}. Sprawdź czujniki.`,
       );
     }
     const uneven = data.filter((s) => s.status === 5);
@@ -43,6 +54,7 @@ export function DashboardPage() {
   if (loading) {
     return (
       <div className="dashboard-page">
+        <DashboardPageBackdrop />
         <div className="dashboard-page__inner">
           <p className="dashboard-page__loading">Ładowanie...</p>
         </div>
@@ -52,6 +64,7 @@ export function DashboardPage() {
 
   return (
     <div className="dashboard-page">
+      <DashboardPageBackdrop />
       <div className="dashboard-page__inner">
       <DashboardHero />
 
@@ -91,7 +104,7 @@ export function DashboardPage() {
       >
         <p style={{ fontSize: 12, margin: 0, color: '#64748b', lineHeight: 1.5 }}>
           <strong>Zakresy i statusy:</strong> Kolor statusu wynika z progów wilgotności zapisanych w nawie:{' '}
-          <em>Sucho</em>, gdy najsuchszy czujnik jest na lub poniżej progu „podlej”; <em>Za mokro</em>, gdy najmokrzejszy — na lub powyżej progu „za mokro”.{' '}
+          <em>Sucho</em>, gdy najsuchszy czujnik jest na lub poniżej progu „podlej”; <em>Za mokro</em>, gdy najmokrzejszy — na lub powyżej progu „za mokro” przez co najmniej pół godziny; <em>Po podlaniu</em> — krótsze przemoczenie (poniżej 30 min).{' '}
           <em>Rozstrzał</em> i <em>sprzeczne czujniki</em> to osobne sytuacje przy większej liczbie punktów pomiarowych. Na karcie widać średnią temperaturę z ostatnich odczytów; progi alertu °C są w ustawieniach nawy i na dole karty (jeśli ustawione).
         </p>
       </div>

@@ -1,6 +1,7 @@
 import ReactECharts from 'echarts-for-react';
 import type { MoisturePoint } from '../api/client';
 import { moisturePointSeriesKey, resolveSeriesLegendName, sortPointsByTime, uniqueSeriesKeys } from '../utils/chartSeries';
+import { echartsAxisTooltipPl, echartsTimeXAxisPl, utcIsoToMs } from '../utils/chartTimePl';
 
 interface Props {
   points: MoisturePoint[];
@@ -50,7 +51,7 @@ export function TemperatureChart({ points, sensorLegendById, temperatureMin, tem
       type: 'line' as const,
       smooth: true,
       symbol: 'none',
-      data: forSeries.map((p) => [p.utcTime, p.temperature]),
+      data: forSeries.map((p) => [utcIsoToMs(p.utcTime), p.temperature]),
       markLine:
         idx === 0 && thresholdLines.length > 0
           ? { symbol: 'none', data: thresholdLines, silent: true }
@@ -60,9 +61,9 @@ export function TemperatureChart({ points, sensorLegendById, temperatureMin, tem
 
   const option = {
     title: { text: 'Temperatura', left: 'center', textStyle: { fontSize: 14 } },
-    tooltip: { trigger: 'axis' as const },
+    tooltip: echartsAxisTooltipPl(),
     legend: { bottom: 0, textStyle: { fontSize: 11 } },
-    xAxis: { type: 'time' as const },
+    xAxis: echartsTimeXAxisPl(),
     yAxis: { type: 'value' as const, name: '°C' },
     grid: { left: 50, right: 16, top: 40, bottom: 40 },
     series,

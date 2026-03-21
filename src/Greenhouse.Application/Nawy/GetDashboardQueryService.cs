@@ -1,26 +1,38 @@
+using System.Globalization;
 using Greenhouse.Application.Abstractions;
+using Greenhouse.Application.Charts;
+using Greenhouse.Application.Voice;
 using Greenhouse.Domain.Nawy;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Greenhouse.Application.Nawy;
 
 public sealed class GetDashboardQueryService
 {
+    private static readonly TimeSpan PostWateringWetMax = TimeSpan.FromMinutes(30);
+
     private readonly INawaRepository _nawy;
     private readonly ISensorRepository _sensors;
     private readonly ISensorReadingRepository _readings;
     private readonly ILogger<GetDashboardQueryService> _logger;
+    private readonly IOptions<VoiceOptions> _voice;
+    private readonly GetWateringEventsQueryService _watering;
 
     public GetDashboardQueryService(
         INawaRepository nawy,
         ISensorRepository sensors,
         ISensorReadingRepository readings,
-        ILogger<GetDashboardQueryService> logger)
+        ILogger<GetDashboardQueryService> logger,
+        IOptions<VoiceOptions> voiceOptions,
+        GetWateringEventsQueryService watering)
     {
         _nawy = nawy;
         _sensors = sensors;
         _readings = readings;
         _logger = logger;
+        _voice = voiceOptions;
+        _watering = watering;
     }
 
     public async Task<IReadOnlyList<NawaSnapshotDto>> ExecuteAsync(CancellationToken cancellationToken)
@@ -82,14 +94,58 @@ public sealed class GetDashboardQueryService
                 thresholds,
                 utcNow);
 
+            if (status == OperatorStatus.Warning && thresholds.Max.HasValue)
+            {
+                var sensorIdsWithMoisture = latestReadings
+                    .Where(r => r.SoilMoisture.HasValue && r.SensorId.HasValue)
+                    .Select(r => r.SensorId!.Value)
+                    .Distinct()
+                    .ToList();
+
+                if (sensorIdsWithMoisture.Count > 0)
+                {
+                    var historyFrom = utcNow.AddHours(-48);
+                    var history = await _readings.GetBySensorIdsAsync(sensorIdsWithMoisture, historyFrom, utcNow, cancellationToken);
+                    var perSensor = VoiceNawaTimeline.BuildPerSensorLists(history, sensorIdsWithMoisture);
+                    var wetMinutes = VoiceNawaTimeline.EstimateContinuousTooWetMinutesFromNow(
+                        perSensor,
+                        sensorIdsWithMoisture,
+                        thresholds.Max.Value,
+                        utcNow,
+                        maxLookbackMinutes: 240);
+
+                    if (wetMinutes > 0 && TimeSpan.FromMinutes(wetMinutes) < PostWateringWetMax)
+                        status = OperatorStatus.PostWatering;
+                }
+            }
+
             LogNawaSnapshot(nawa.Name, nawa.Id, status, sensorIds.Count, moistureReadingCount, minMoisture, maxMoisture, moistureSpread, thresholds);
+
+            string? wateringNote = null;
+            if (status is OperatorStatus.Dry or OperatorStatus.Conflict or OperatorStatus.PostWatering)
+            {
+                var last = await _watering.TryGetLastWateringEventAsync(
+                    nawa.Id,
+                    utcNow - VoiceWateringSpeech.DefaultWateringLookback,
+                    utcNow,
+                    cancellationToken);
+                var tz = ResolveTimeZone(_voice.Value.TimeZoneId);
+                var pl = CultureInfo.GetCultureInfo("pl-PL");
+                var note = status == OperatorStatus.PostWatering
+                    ? VoiceWateringSpeech.ForPostWateringContext(last, utcNow, tz, pl)
+                    : VoiceWateringSpeech.ForDrySinceWatering(last, utcNow, tz, pl);
+                wateringNote = note.Trim();
+                if (wateringNote.Length == 0)
+                    wateringNote = null;
+            }
 
             snapshots.Add(new NawaSnapshotDto(
                 nawa.Id, nawa.Name, nawa.PlantNote,
                 status, sensorIds.Count, moistureReadingCount,
                 avgMoisture, minMoisture, maxMoisture, moistureSpread, avgTemp,
                 lowestBattery, oldestReading, utcNow,
-                nawa.MoistureMin, nawa.MoistureMax, nawa.TemperatureMin, nawa.TemperatureMax));
+                nawa.MoistureMin, nawa.MoistureMax, nawa.TemperatureMin, nawa.TemperatureMax,
+                wateringNote));
         }
 
         return snapshots;
@@ -134,6 +190,12 @@ public sealed class GetDashboardQueryService
                 "Nawa {NawaName} ({NawaId}): za mokro (najwyższy odczyt max={Max}, próg={ThMax})",
                 nawaName, nawaId, maxM, th.Max);
         }
+        else if (status == OperatorStatus.PostWatering)
+        {
+            _logger.LogInformation(
+                "Nawa {NawaName} ({NawaId}): po podlaniu / krotkie przemoczenie (max={Max}, prog={ThMax}, <30 min wg historii)",
+                nawaName, nawaId, maxM, th.Max);
+        }
     }
 
     private static NawaSnapshotDto BuildEmptySnapshot(Nawa nawa, DateTime utcNow) =>
@@ -141,5 +203,21 @@ public sealed class GetDashboardQueryService
             OperatorStatus.NoData, 0, 0,
             null, null, null, null, null,
             null, null, utcNow,
-            nawa.MoistureMin, nawa.MoistureMax, nawa.TemperatureMin, nawa.TemperatureMax);
+            nawa.MoistureMin, nawa.MoistureMax, nawa.TemperatureMin, nawa.TemperatureMax,
+            null);
+
+    private static TimeZoneInfo ResolveTimeZone(string timeZoneId)
+    {
+        if (string.IsNullOrWhiteSpace(timeZoneId))
+            return TimeZoneInfo.Utc;
+
+        try
+        {
+            return TimeZoneInfo.FindSystemTimeZoneById(timeZoneId.Trim());
+        }
+        catch
+        {
+            return TimeZoneInfo.Utc;
+        }
+    }
 }

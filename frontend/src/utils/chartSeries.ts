@@ -1,4 +1,5 @@
 import type { MoisturePoint } from '../api/client';
+import { utcIsoToMs } from './chartTimePl';
 
 /**
  * Zigbee2MQTT zmienia fragment tematu po zmianie „friendly name” — w bazie zostają różne
@@ -30,5 +31,5 @@ export function resolveSeriesLegendName(
 }
 
 export function sortPointsByTime(points: MoisturePoint[]): MoisturePoint[] {
-  return [...points].sort((a, b) => new Date(a.utcTime).getTime() - new Date(b.utcTime).getTime());
+  return [...points].sort((a, b) => utcIsoToMs(a.utcTime) - utcIsoToMs(b.utcTime));
 }

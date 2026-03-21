@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text;
 using Greenhouse.Application.Abstractions;
+using Greenhouse.Application.Charts;
 using Greenhouse.Domain.Nawy;
 using Microsoft.Extensions.Options;
 
@@ -9,22 +10,26 @@ namespace Greenhouse.Application.Voice;
 public sealed class GetNawaVoiceBriefQueryService
 {
     private static readonly TimeSpan HistoryLookback = TimeSpan.FromHours(72);
+    private const int PostWateringWetMinutesThreshold = 30;
 
     private readonly VoiceOptions _voice;
     private readonly INawaRepository _nawy;
     private readonly ISensorRepository _sensors;
     private readonly ISensorReadingRepository _readings;
+    private readonly GetWateringEventsQueryService _watering;
 
     public GetNawaVoiceBriefQueryService(
         IOptions<VoiceOptions> voiceOptions,
         INawaRepository nawy,
         ISensorRepository sensors,
-        ISensorReadingRepository readings)
+        ISensorReadingRepository readings,
+        GetWateringEventsQueryService watering)
     {
         _voice = voiceOptions.Value;
         _nawy = nawy;
         _sensors = sensors;
         _readings = readings;
+        _watering = watering;
     }
 
     public async Task<NawaVoiceBriefDto?> ExecuteAsync(Guid nawaId, CancellationToken cancellationToken)
@@ -74,6 +79,36 @@ public sealed class GetNawaVoiceBriefQueryService
             thresholds,
             utcNow);
 
+        var historyFrom = utcNow - HistoryLookback;
+        var history = await _readings.GetBySensorIdsAsync(sensorIds, historyFrom, utcNow, cancellationToken);
+
+        var sensorIdsWithMoisture = latestReadings
+            .Where(r => r.SoilMoisture.HasValue && r.SensorId.HasValue)
+            .Select(r => r.SensorId!.Value)
+            .Distinct()
+            .ToList();
+
+        if (status == OperatorStatus.Warning && nawa.MoistureMax.HasValue && sensorIdsWithMoisture.Count > 0)
+        {
+            var perMoist = VoiceNawaTimeline.BuildPerSensorLists(history, sensorIdsWithMoisture);
+            var wetMin = VoiceNawaTimeline.EstimateContinuousTooWetMinutesFromNow(
+                perMoist,
+                sensorIdsWithMoisture,
+                nawa.MoistureMax.Value,
+                utcNow,
+                maxLookbackMinutes: 240);
+            if (wetMin > 0 && wetMin < PostWateringWetMinutesThreshold)
+                status = OperatorStatus.PostWatering;
+        }
+
+        var perSensor = VoiceNawaTimeline.BuildPerSensorLists(history, sensorIds);
+
+        var lastWatering = await _watering.TryGetLastWateringEventAsync(
+            nawa.Id,
+            utcNow - VoiceWateringSpeech.DefaultWateringLookback,
+            utcNow,
+            cancellationToken);
+
         sb.Append("Stan wilgotności: ").Append(StatusLabel(status)).Append(' ');
 
         var mMin = nawa.MoistureMin;
@@ -85,11 +120,11 @@ public sealed class GetNawaVoiceBriefQueryService
         {
             sb.Append("Progi wilgotności: ");
             if (mMin.HasValue)
-                sb.Append("podlej przy ").Append(Fmt(mMin.Value)).Append(" procentach lub mniej");
+                sb.Append("podlej, gdy najniższy odczyt spadnie do ").Append(Fmt(mMin.Value)).Append(" procent albo niżej");
             if (mMin.HasValue && mMax.HasValue)
                 sb.Append(", ");
             if (mMax.HasValue)
-                sb.Append("za mokro przy ").Append(Fmt(mMax.Value)).Append(" procentach lub więcej");
+                sb.Append("za mokro, gdy najwyższy odczyt wynosi co najmniej ").Append(Fmt(mMax.Value)).Append(" procent");
             sb.Append(". ");
         }
         else
@@ -101,6 +136,9 @@ public sealed class GetNawaVoiceBriefQueryService
         else if (moistureReadingCount == 0)
             sb.Append("Brak aktualnych odczytów wilgotności z czujników. ");
 
+        if (status == OperatorStatus.PostWatering)
+            sb.Append(VoiceWateringSpeech.ForPostWateringContext(lastWatering, utcNow, tz, pl));
+
         if (avgTemp.HasValue)
             sb.Append("Średnia temperatura z czujników około ").Append(Fmt(avgTemp.Value)).Append(" stopni Celsjusza. ");
         else
@@ -110,17 +148,13 @@ public sealed class GetNawaVoiceBriefQueryService
         {
             sb.Append("Progi temperatury: ");
             if (tMin.HasValue)
-                sb.Append("minimum ").Append(Fmt(tMin.Value)).Append(" stopni");
+                sb.Append("minimum ").Append(Fmt(tMin.Value)).Append(" stopni Celsjusza");
             if (tMin.HasValue && tMax.HasValue)
                 sb.Append(", ");
             if (tMax.HasValue)
-                sb.Append("maksimum ").Append(Fmt(tMax.Value)).Append(" stopni");
+                sb.Append("maksimum ").Append(Fmt(tMax.Value)).Append(" stopni Celsjusza");
             sb.Append(". ");
         }
-
-        var historyFrom = utcNow - HistoryLookback;
-        var history = await _readings.GetBySensorIdsAsync(sensorIds, historyFrom, utcNow, cancellationToken);
-        var perSensor = VoiceNawaTimeline.BuildPerSensorLists(history, sensorIds);
 
         if (mMin.HasValue && (status == OperatorStatus.Dry || status == OperatorStatus.Conflict))
         {
@@ -131,6 +165,8 @@ public sealed class GetNawaVoiceBriefQueryService
                     .Append(", na podstawie historii z ostatnich 72 godzin. ");
             else
                 sb.Append("Suchość jest widoczna teraz, ale nie udało się oszacować momentu startu z historii 72 godzin. ");
+
+            sb.Append(VoiceWateringSpeech.ForDrySinceWatering(lastWatering, utcNow, tz, pl));
         }
 
         if (mMax.HasValue && (status == OperatorStatus.Warning || status == OperatorStatus.Conflict))
@@ -184,6 +220,7 @@ public sealed class GetNawaVoiceBriefQueryService
     {
         OperatorStatus.Ok => "w normie według progów i rozstrzału.",
         OperatorStatus.Warning => "za mokro — przekroczony próg górny wilgotności.",
+        OperatorStatus.PostWatering => "świeżo po podlaniu albo krótkotrwałe przemoczenie — wilgotność może jeszcze opaść.",
         OperatorStatus.Dry => "sucho — najniższy odczyt poniżej progu podlania.",
         OperatorStatus.NoData => "brak danych lub dane są zbyt stare.",
         OperatorStatus.Conflict => "sprzeczne odczyty — jeden czujnik wskazuje sucho, inny za mokro.",

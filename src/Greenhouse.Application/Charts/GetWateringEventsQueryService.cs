@@ -63,6 +63,20 @@ public sealed class GetWateringEventsQueryService
             .ToList();
     }
 
+    /// <summary>Ostatni epizod silnego skoku wilgotności w oknie (heurystyka podlania / deszczu).</summary>
+    public async Task<WateringEventDto?> TryGetLastWateringEventAsync(
+        Guid nawaId,
+        DateTime fromUtc,
+        DateTime toUtc,
+        CancellationToken cancellationToken)
+    {
+        var list = await ExecuteAsync(nawaId, fromUtc, toUtc, cancellationToken);
+        if (list.Count == 0)
+            return null;
+
+        return list.OrderByDescending(e => e.DetectedAtUtc).First();
+    }
+
     private static string ToApiKind(WateringEventInferredKind kind) =>
         kind switch
         {

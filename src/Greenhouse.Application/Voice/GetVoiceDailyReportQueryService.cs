@@ -1,5 +1,6 @@
 using System.Globalization;
 using Greenhouse.Application.Abstractions;
+using Greenhouse.Application.Charts;
 using Microsoft.Extensions.Options;
 
 namespace Greenhouse.Application.Voice;
@@ -10,17 +11,20 @@ public sealed class GetVoiceDailyReportQueryService
     private readonly INawaRepository _nawy;
     private readonly ISensorRepository _sensors;
     private readonly ISensorReadingRepository _readings;
+    private readonly GetWateringEventsQueryService _watering;
 
     public GetVoiceDailyReportQueryService(
         IOptions<VoiceOptions> voiceOptions,
         INawaRepository nawy,
         ISensorRepository sensors,
-        ISensorReadingRepository readings)
+        ISensorReadingRepository readings,
+        GetWateringEventsQueryService watering)
     {
         _voice = voiceOptions.Value;
         _nawy = nawy;
         _sensors = sensors;
         _readings = readings;
+        _watering = watering;
     }
 
     public async Task<VoiceDailyReportDto> ExecuteAsync(CancellationToken cancellationToken)
@@ -66,6 +70,16 @@ public sealed class GetVoiceDailyReportQueryService
                 avgM, avgT,
                 nawa.MoistureMin, nawa.MoistureMax, nawa.TemperatureMin, nawa.TemperatureMax,
                 sensorIds.Count, readings.Count);
+
+            if (readings.Count > 0 && nawa.MoistureMin.HasValue && avgM.HasValue && avgM.Value < nawa.MoistureMin.Value)
+            {
+                var last = await _watering.TryGetLastWateringEventAsync(
+                    nawa.Id,
+                    nowUtc - VoiceWateringSpeech.DefaultWateringLookback,
+                    nowUtc,
+                    cancellationToken);
+                m = $"{m.TrimEnd()} {VoiceWateringSpeech.ForDrySinceWatering(last, nowUtc, tz, culture)}".Trim();
+            }
 
             lines.Add(new NawaVoiceLineDto(order, nawa.Name, avgT, avgM, readings.Count, sensorIds.Count, m, t));
         }

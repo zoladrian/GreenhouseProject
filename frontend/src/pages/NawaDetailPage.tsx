@@ -1,4 +1,4 @@
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api/client';
 import { useFetch } from '../hooks/useFetch';
 import { speakPolish } from '../hooks/useTts';
@@ -7,6 +7,7 @@ import { TemperatureChart } from '../components/TemperatureChart';
 import { BatteryChart } from '../components/BatteryChart';
 import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
+import { NawyPageBackdrop } from '../components/NawyPageBackdrop';
 
 type RangePreset = '6h' | '24h' | '48h' | '7d' | '30d' | 'custom';
 
@@ -25,6 +26,7 @@ function toDatetimeLocalValue(d: Date) {
 
 export function NawaDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const { data: detail, loading, refetch } = useFetch(() => api.getNawaDetail(id!), [id]);
 
   const [rangePreset, setRangePreset] = useState<RangePreset>('24h');
@@ -134,7 +136,13 @@ export function NawaDetailPage() {
   if (loading || !detail) {
     return (
       <div className="nawy-page nawy-page--detail">
-        <p className="nawy-page__loading">Ładowanie...</p>
+        <NawyPageBackdrop />
+        <div className="nawy-page__inner">
+          <button type="button" className="nawa-back-btn" onClick={() => navigate('/nawy')}>
+            ← Cofnij
+          </button>
+          <p className="nawy-page__loading">Ładowanie...</p>
+        </div>
       </div>
     );
   }
@@ -148,7 +156,11 @@ export function NawaDetailPage() {
 
   return (
     <div className="nawy-page nawy-page--detail">
+      <NawyPageBackdrop />
       <div className="nawy-page__inner">
+      <button type="button" className="nawa-back-btn" onClick={() => navigate('/nawy')}>
+        ← Cofnij
+      </button>
       <header className="nawa-detail-header">
         <h2 className="nawy-page__title">{detail.name}</h2>
         {detail.plantNote && <p className="nawa-detail-sub">🌿 {detail.plantNote}</p>}

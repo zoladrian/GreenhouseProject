@@ -1,13 +1,16 @@
 using Greenhouse.Application.Abstractions;
+using Greenhouse.Application.Charts;
 using Greenhouse.Application.Ingestion;
 using Greenhouse.Application.Nawy;
 using Greenhouse.Application.Sensors;
+using Greenhouse.Application.Voice;
 using Greenhouse.Domain.Nawy;
 using Greenhouse.Domain.Sensors;
 using Greenhouse.Infrastructure.Mqtt;
 using Greenhouse.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 
 namespace Greenhouse.Infrastructure.IntegrationTests.Dashboard;
 
@@ -58,7 +61,15 @@ public sealed class DashboardIntegrationTests : IDisposable
         await sensorRepo.SaveChangesAsync(CancellationToken.None);
         _db.ChangeTracker.Clear();
 
-        var dashboardService = new GetDashboardQueryService(nawaRepo, sensorRepo, readingRepo, NullLogger<GetDashboardQueryService>.Instance);
+        var voice = Options.Create(new VoiceOptions());
+        var watering = new GetWateringEventsQueryService(sensorRepo, readingRepo);
+        var dashboardService = new GetDashboardQueryService(
+            nawaRepo,
+            sensorRepo,
+            readingRepo,
+            NullLogger<GetDashboardQueryService>.Instance,
+            voice,
+            watering);
         var snapshots = await dashboardService.ExecuteAsync(CancellationToken.None);
 
         Assert.Single(snapshots);

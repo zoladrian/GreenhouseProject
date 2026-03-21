@@ -9,4 +9,6 @@ Pliki w tym katalogu trafiają do `wwwroot` (Vite `public/`) i są dostępne pod
 - **`nawy-beds-bg.png`** — prawa połowa tła (grządki z chryzantemami); razem z `nawy-aisle-bg.png` składa się panoramę pod listę i szczegół nawy.
 - Pliki `.svg` — lekkie placeholdery z repozytorium.
 
+Na pulpicie i w **Nawy** obrazy są wyświetlane z **`object-fit: contain`** (pełny kadr pliku, bez przycinania jak przy `cover`). Tło pulpitu to osobny `<img>` z `max-width` / `max-height` 100% — nie powiększa się ponad rozdzielczość bitmapy w pikselach.
+
 Aby podmienić grafiki: zastąp powyższe PNG własnymi plikami **o tych samych nazwach** i zrób ponowny build frontu / obrazu Docker.

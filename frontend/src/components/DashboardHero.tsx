@@ -17,8 +17,6 @@ export function DashboardHero() {
           fallbackSrc={heroFallback}
           fallbackSrc2={heroSvgFallback}
           alt="Kwiaty Polskie — petunie"
-          width={800}
-          height={320}
           decoding="async"
         />
         <div className="dashboard-hero__overlay" aria-hidden="true" />

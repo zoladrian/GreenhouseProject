@@ -22,4 +22,6 @@ public sealed record NawaSnapshotDto(
     decimal? MoistureMin,
     decimal? MoistureMax,
     decimal? TemperatureMin,
-    decimal? TemperatureMax);
+    decimal? TemperatureMax,
+    /// <summary>Krótka wypowiedź o ostatnim podlaniu (TTS), gdy status sucho / konflikt / po podlaniu.</summary>
+    string? WateringSpeechNote);

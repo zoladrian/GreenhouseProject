@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
 import { useFetch } from '../hooks/useFetch';
+import { NawyPageBackdrop } from '../components/NawyPageBackdrop';
 
 export function NawyListPage() {
   const { data: nawy, loading, refetch } = useFetch(() => api.getNawy());
@@ -20,6 +21,7 @@ export function NawyListPage() {
   if (loading) {
     return (
       <div className="nawy-page">
+        <NawyPageBackdrop />
         <p className="nawy-page__loading">Ładowanie...</p>
       </div>
     );
@@ -27,6 +29,7 @@ export function NawyListPage() {
 
   return (
     <div className="nawy-page">
+      <NawyPageBackdrop />
       <div className="nawy-page__inner">
         <div className="nawy-page__toolbar">
           <h2 className="nawy-page__title">Nawy</h2>

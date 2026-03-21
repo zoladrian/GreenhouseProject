@@ -30,7 +30,7 @@ export interface NawaSnapshot {
   nawaId: string;
   nawaName: string;
   plantNote: string | null;
-  /** 0 Ok, 1 Uwaga (za mokro), 2 Sucho, 3 Brak danych, 4 Sprzeczne czujniki, 5 Rozstrzał czujników */
+  /** 0 Ok, 1 Za mokro, 2 Sucho, 3 Brak danych, 4 Sprzeczne czujniki, 5 Rozstrzał, 6 Po podlaniu (krótkie przemoczenie) */
   status: number;
   sensorCount: number;
   moistureReadingCount: number;
@@ -47,6 +47,8 @@ export interface NawaSnapshot {
   moistureMax: number | null;
   temperatureMin: number | null;
   temperatureMax: number | null;
+  /** Krótka wypowiedź TTS o ostatnim podlaniu (sucho / konflikt / po podlaniu). */
+  wateringSpeechNote?: string | null;
 }
 
 export interface NawaDto {
