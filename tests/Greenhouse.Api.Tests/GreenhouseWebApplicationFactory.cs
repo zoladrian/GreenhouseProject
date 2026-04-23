@@ -13,5 +13,6 @@ public sealed class GreenhouseWebApplicationFactory : WebApplicationFactory<Prog
         var dbPath = Path.Combine(Path.GetTempPath(), $"greenhouse-api-test-{Guid.NewGuid()}.db");
         builder.UseSetting("Infrastructure:DatabasePath", dbPath);
         builder.UseSetting("Mqtt:Enabled", "false");
+        builder.UseSetting("ApiSecurity:RequireForMutations", "false");
     }
 }

@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "EC9DQCqk2XE=",
+  "dgSpecHash": "Z2/2yhgz2o0=",
   "success": true,
   "projectFilePath": "C:\\Users\\Gigabyte\\source\\repos\\GreenhouseProject\\tests\\Greenhouse.Api.Tests\\Greenhouse.Api.Tests.csproj",
   "expectedPackageFiles": [
@@ -44,6 +44,7 @@
     "C:\\Users\\Gigabyte\\.nuget\\packages\\microsoft.extensions.logging.eventsource\\8.0.1\\microsoft.extensions.logging.eventsource.8.0.1.nupkg.sha512",
     "C:\\Users\\Gigabyte\\.nuget\\packages\\microsoft.extensions.options\\8.0.2\\microsoft.extensions.options.8.0.2.nupkg.sha512",
     "C:\\Users\\Gigabyte\\.nuget\\packages\\microsoft.extensions.options.configurationextensions\\8.0.0\\microsoft.extensions.options.configurationextensions.8.0.0.nupkg.sha512",
+    "C:\\Users\\Gigabyte\\.nuget\\packages\\microsoft.extensions.options.dataannotations\\8.0.0\\microsoft.extensions.options.dataannotations.8.0.0.nupkg.sha512",
     "C:\\Users\\Gigabyte\\.nuget\\packages\\microsoft.extensions.primitives\\8.0.0\\microsoft.extensions.primitives.8.0.0.nupkg.sha512",
     "C:\\Users\\Gigabyte\\.nuget\\packages\\microsoft.net.test.sdk\\17.12.0\\microsoft.net.test.sdk.17.12.0.nupkg.sha512",
     "C:\\Users\\Gigabyte\\.nuget\\packages\\microsoft.testplatform.objectmodel\\17.12.0\\microsoft.testplatform.objectmodel.17.12.0.nupkg.sha512",

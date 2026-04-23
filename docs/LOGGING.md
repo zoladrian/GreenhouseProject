@@ -52,3 +52,10 @@ Albo cały prefiks aplikacji (dużo logów):
 ## Powiązane
 
 - MQTT, ingest, EF — sekcja **Diagnostyka** w [DEPLOYMENT.md](DEPLOYMENT.md).
+
+## Operacyjny zestaw kontroli
+
+- **Live/ready:** `GET /health/live`, `GET /health/ready`
+- **Liczniki ingestu:** `GET /api/meta/ingest`
+- **Pruning historii:** logi kategorii `Greenhouse.Api.Operations.DataLifecyclePruningHostedService`
+- **Autoryzacja mutacji:** 401 na `POST/PUT/DELETE` bez poprawnego `X-Api-Key`

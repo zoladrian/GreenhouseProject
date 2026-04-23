@@ -1,2 +1,51 @@
 # Lokalna konfiguracja Docker (ścieżka do dongla Zigbee itd.)
 .env
+
+# --- OS / Editor ---
+.DS_Store
+Thumbs.db
+Desktop.ini
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# --- Cursor / local agent artifacts ---
+.cursor/
+
+# --- .NET / C# build artifacts ---
+**/bin/
+**/obj/
+*.user
+*.rsuser
+*.suo
+*.userosscache
+*.sln.docstates
+TestResults/
+*.trx
+*.coverage
+*.coveragexml
+*.nupkg
+*.snupkg
+
+# --- EF / local databases / logs ---
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+*.log
+
+# --- Node / frontend artifacts ---
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/coverage/
+frontend/.cache/
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/pnpm-debug.log*
+
+# --- Docker / compose overrides (local only) ---
+docker-compose.override.yml

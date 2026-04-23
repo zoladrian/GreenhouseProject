@@ -172,5 +172,8 @@ public sealed class GetDashboardQueryServiceTests
 
         public Task<int> AlignAllLinkedReadingSensorIdentifiersAsync(CancellationToken ct) =>
             Task.FromResult(0);
+
+        public Task<bool> ExistsDuplicateAsync(string sensorIdentifier, DateTime receivedAtUtc, string topic, string rawPayloadJson, CancellationToken ct) =>
+            Task.FromResult(false);
     }
 }

@@ -40,10 +40,20 @@ public sealed class GetDashboardQueryService
         var nawy = await _nawy.ListAsync(cancellationToken);
         var allSensors = await _sensors.ListAsync(cancellationToken);
         var utcNow = DateTime.UtcNow;
+        var activeNawy = nawy.Where(n => n.IsActive).ToList();
+        var activeNawaIds = activeNawy.Select(n => n.Id).ToHashSet();
+        var activeSensors = allSensors.Where(s => s.NawaId.HasValue && activeNawaIds.Contains(s.NawaId.Value)).ToList();
+        var activeSensorIds = activeSensors.Select(s => s.Id).ToList();
+        var latestForAllSensors = await _readings.GetLatestPerSensorAsync(activeSensorIds, cancellationToken);
+        var latestBySensorId = latestForAllSensors
+            .Where(r => r.SensorId.HasValue)
+            .ToDictionary(r => r.SensorId!.Value, r => r);
+        var weatherHistoryFrom = utcNow.AddHours(-48);
+        var history48h = await _readings.GetBySensorIdsAsync(activeSensorIds, weatherHistoryFrom, utcNow, cancellationToken);
 
         var snapshots = new List<NawaSnapshotDto>();
 
-        foreach (var nawa in nawy.Where(n => n.IsActive))
+        foreach (var nawa in activeNawy)
         {
             var nawaSensors = allSensors.Where(s => s.NawaId == nawa.Id).ToList();
             var sensorIds = nawaSensors.Select(s => s.Id).ToList();
@@ -54,7 +64,10 @@ public sealed class GetDashboardQueryService
                 continue;
             }
 
-            var latestReadings = await _readings.GetLatestPerSensorAsync(sensorIds, cancellationToken);
+            var latestReadings = sensorIds
+                .Where(latestBySensorId.ContainsKey)
+                .Select(id => latestBySensorId[id])
+                .ToList();
 
             var moistures = latestReadings
                 .Where(r => r.SoilMoisture.HasValue)
@@ -104,8 +117,9 @@ public sealed class GetDashboardQueryService
 
                 if (sensorIdsWithMoisture.Count > 0)
                 {
-                    var historyFrom = utcNow.AddHours(-48);
-                    var history = await _readings.GetBySensorIdsAsync(sensorIdsWithMoisture, historyFrom, utcNow, cancellationToken);
+                    var history = history48h
+                        .Where(r => r.SensorId.HasValue && sensorIdsWithMoisture.Contains(r.SensorId.Value))
+                        .ToList();
                     var perSensor = VoiceNawaTimeline.BuildPerSensorLists(history, sensorIdsWithMoisture);
                     var wetMinutes = VoiceNawaTimeline.EstimateContinuousTooWetMinutesFromNow(
                         perSensor,

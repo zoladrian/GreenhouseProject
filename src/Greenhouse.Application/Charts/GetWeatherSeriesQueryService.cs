@@ -33,42 +33,45 @@ public sealed class GetWeatherSeriesQueryService
         }
 
         var readings = await _readings.GetBySensorIdsAsync(sensorIds, from, to, cancellationToken);
-        var bySensor = readings
-            .Where(r => r.SensorId.HasValue)
-            .GroupBy(r => r.SensorId!.Value)
-            .ToDictionary(g => g.Key, g => g.OrderBy(r => r.ReceivedAtUtc).ToList());
-
         var result = new List<WeatherSeriesPointDto>(readings.Count);
-        foreach (var row in readings.OrderBy(r => r.ReceivedAtUtc))
+        foreach (var perSensor in readings
+                     .Where(r => r.SensorId.HasValue)
+                     .GroupBy(r => r.SensorId!.Value))
         {
-            RainLevel? rainLevel = null;
-            LightLevel? lightLevel = null;
-
-            if (row.SensorId.HasValue && bySensor.TryGetValue(row.SensorId.Value, out var history))
+            DateTime? rainStreakStart = null;
+            foreach (var row in perSensor.OrderBy(r => r.ReceivedAtUtc))
             {
-                var uptoNow = history.Where(x => x.ReceivedAtUtc <= row.ReceivedAtUtc).ToList();
-                var interpreted = _interpretation.Interpret(row, uptoNow, row.ReceivedAtUtc);
-                rainLevel = interpreted.RainLevel;
-                lightLevel = interpreted.LightLevel;
-            }
+                if (row.Rain == true)
+                {
+                    rainStreakStart ??= row.ReceivedAtUtc;
+                }
+                else
+                {
+                    rainStreakStart = null;
+                }
 
-            result.Add(new WeatherSeriesPointDto(
-                row.ReceivedAtUtc,
-                row.SensorIdentifier,
-                row.SensorId,
-                row.Rain,
-                row.RainIntensityRaw,
-                row.IlluminanceRaw,
-                row.IlluminanceAverage20MinRaw,
-                row.IlluminanceMaximumTodayRaw,
-                row.Battery,
-                row.LinkQuality,
-                row.CleaningReminder,
-                rainLevel,
-                lightLevel));
+                var rainSignalMinutes = rainStreakStart.HasValue
+                    ? (int)Math.Round((row.ReceivedAtUtc - rainStreakStart.Value).TotalMinutes)
+                    : 0;
+                var interpreted = _interpretation.Interpret(row, rainSignalMinutes);
+                result.Add(new WeatherSeriesPointDto(
+                    row.ReceivedAtUtc,
+                    row.SensorIdentifier,
+                    row.SensorId,
+                    row.Rain,
+                    row.RainIntensityRaw,
+                    row.IlluminanceRaw,
+                    row.IlluminanceAverage20MinRaw,
+                    row.IlluminanceMaximumTodayRaw,
+                    row.Battery,
+                    row.LinkQuality,
+                    row.CleaningReminder,
+                    interpreted.RainLevel,
+                    interpreted.LightLevel));
+            }
         }
 
-        return result;
+        return result.OrderBy(x => x.UtcTime).ToList();
     }
 
     private async Task<IReadOnlyList<Guid>> ResolveSensorIds(

@@ -137,14 +137,35 @@ Obecnie używane jest `EnsureCreated`. Po zmianie encji usuń plik `greenhouse.d
 | `ZIGBEE_DEVICE` | (Plik **`.env`** obok `docker-compose.yml`, nie kontener API) Ścieżka do dongla Zigbee **na hoście**. Domyślnie w compose: `/dev/ttyACM0`. Patrz [`.env.example`](../.env.example). |
 | `Infrastructure__DatabasePath` | Ścieżka do pliku SQLite (w compose: `/app/data/greenhouse.db`) |
 | `Mqtt__Enabled` | `true`/`false` — wyłącza subskrypcję MQTT |
+| `Mqtt__EnableInApiHost` | `true`/`false` — czy API ma uruchamiać ingest MQTT |
 | `Mqtt__Host` | Host brokera (w sieci compose: `mosquitto`) |
 | `Mqtt__Port` | Port (1883) |
 | `Mqtt__TopicFilter` | Filtr subskrypcji (domyślnie `zigbee2mqtt/#`) |
+| `ApiSecurity__RequireForMutations` | Wymusza nagłówek API key na `POST/PUT/DELETE` |
+| `ApiSecurity__HeaderName` | Nazwa nagłówka z kluczem (domyślnie `X-Api-Key`) |
+| `ApiSecurity__ApiKey` | Klucz API dla mutacji (ustaw własny w produkcji) |
+| `Charts__MaxPointsPerSeries` | Górny limit punktów w odpowiedziach endpointów wykresowych |
+| `DataLifecycle__EnablePruning` | Włącza okresowe czyszczenie starych odczytów |
+| `DataLifecycle__KeepReadingsDays` | Ile dni historii odczytów trzymać |
+| `DataLifecycle__PruneIntervalHours` | Co ile godzin wykonywać czyszczenie |
 | `Voice__GreetingLeadin` | Początek wypowiedzi głosowej (np. „Dzień dobry Panie Czesławie”) |
 | `Voice__TimeZoneId` | Strefa do „północy” przy średnich dziennych (domyślnie `Europe/Warsaw`) |
 | `GREENHOUSE_DEPLOY_ID` | (Opcjonalnie) Nadpisuje identyfikator z obrazu; **zwykle nie ustawiaj** — wtedy każdy build Dockera ma unikalny `deploy-id` i panel sam się przeładuje po aktualizacji. |
 
 **Raport głosowy (offline):** na dashboardzie przycisk „Odczytaj dzienny raport” wywołuje `GET /api/voice/daily-report` — średnie wilgotności i temperatury z czujników przypisanych do nawy od **lokalnej północy** w `Voice:TimeZoneId`. Bez internetu — bez pogody z sieci.
+
+## Health i gotowość
+
+- `GET /health/live` — proces działa.
+- `GET /health/ready` — API ma łączność z bazą.
+- `GET /api/meta/ingest` — liczniki ingestu MQTT od startu procesu.
+
+## Runbook (incydenty)
+
+1. **Brak danych w UI**: sprawdź `/health/ready`, potem logi API i liczniki z `/api/meta/ingest`.
+2. **Mutacje API zwracają 401**: sprawdź nagłówek `X-Api-Key` i `ApiSecurity__ApiKey`.
+3. **Duże opóźnienia wykresów**: obniż `Charts__MaxPointsPerSeries` i zawęź zakres czasu.
+4. **Rosnący rozmiar DB**: potwierdź `DataLifecycle__EnablePruning=true` i wartości retencji.
 
 ## Diagnostyka: `wiadomości z brokera=0` / brak ruchu na Mosquitto
 

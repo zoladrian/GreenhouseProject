@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import ReactECharts from 'echarts-for-react';
 import type { MoisturePoint } from '../api/client';
 import { moisturePointSeriesKey, resolveSeriesLegendName, sortPointsByTime, uniqueSeriesKeys } from '../utils/chartSeries';
@@ -14,7 +15,7 @@ export function BatteryChart({
 
   const seriesKeys = uniqueSeriesKeys(points);
 
-  const series = seriesKeys.map((key) => {
+  const series = useMemo(() => seriesKeys.map((key) => {
     const forSeries = sortPointsByTime(
       points.filter((p) => moisturePointSeriesKey(p) === key && p.battery !== null),
     );
@@ -25,8 +26,11 @@ export function BatteryChart({
       smooth: true,
       symbol: 'none',
       data: forSeries.map((p) => [utcIsoToMs(p.utcTime), p.battery]),
+      sampling: 'lttb' as const,
+      progressive: 1000,
+      progressiveThreshold: 3000,
     };
-  });
+  }), [seriesKeys, points, sensorLegendById]);
   const rangeMs = inferRangeMs(points.map((p) => utcIsoToMs(p.utcTime)).filter((n) => !Number.isNaN(n)));
 
   const option = {
@@ -36,6 +40,7 @@ export function BatteryChart({
     xAxis: echartsTimeXAxisPl(rangeMs),
     yAxis: { type: 'value' as const, name: '%', min: 0, max: 100 },
     grid: { left: 50, right: 16, top: 40, bottom: rangeMs && rangeMs > 48 * 3600_000 ? 56 : 40 },
+    animation: !(rangeMs && rangeMs > 24 * 3600_000),
     series,
   };
 

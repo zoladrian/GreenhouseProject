@@ -24,6 +24,14 @@ public sealed class WeatherInterpretationService
         return new WeatherInterpretationResult(rainLevel, lightLevel, rainSignalMinutes, reason);
     }
 
+    public WeatherInterpretationResult Interpret(SensorReading latest, int rainSignalMinutes)
+    {
+        var lightLevel = ClassifyLight(latest);
+        var rainLevel = ClassifyRain(latest, lightLevel, rainSignalMinutes);
+        var reason = BuildReason(latest, lightLevel, rainSignalMinutes, rainLevel);
+        return new WeatherInterpretationResult(rainLevel, lightLevel, rainSignalMinutes, reason);
+    }
+
     private RainLevel ClassifyRain(SensorReading latest, LightLevel lightLevel, int rainSignalMinutes)
     {
         var rain = latest.Rain ?? false;

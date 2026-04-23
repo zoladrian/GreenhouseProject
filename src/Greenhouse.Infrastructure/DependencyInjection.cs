@@ -11,8 +11,12 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
-        var options = new InfrastructureOptions();
-        configuration.GetSection(InfrastructureOptions.SectionName).Bind(options);
+        services.AddOptions<InfrastructureOptions>()
+            .Bind(configuration.GetSection(InfrastructureOptions.SectionName))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
+        var options = configuration.GetSection(InfrastructureOptions.SectionName).Get<InfrastructureOptions>() ?? new InfrastructureOptions();
 
         var databasePath = Path.GetFullPath(options.DatabasePath);
         var databaseDirectory = Path.GetDirectoryName(databasePath);

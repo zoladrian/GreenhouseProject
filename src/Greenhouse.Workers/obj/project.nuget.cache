@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "udV8NhypRms=",
+  "dgSpecHash": "LYozSa1SKNw=",
   "success": true,
   "projectFilePath": "C:\\Users\\Gigabyte\\source\\repos\\GreenhouseProject\\src\\Greenhouse.Workers\\Greenhouse.Workers.csproj",
   "expectedPackageFiles": [
@@ -40,6 +40,7 @@
     "C:\\Users\\Gigabyte\\.nuget\\packages\\microsoft.extensions.logging.eventsource\\8.0.1\\microsoft.extensions.logging.eventsource.8.0.1.nupkg.sha512",
     "C:\\Users\\Gigabyte\\.nuget\\packages\\microsoft.extensions.options\\8.0.2\\microsoft.extensions.options.8.0.2.nupkg.sha512",
     "C:\\Users\\Gigabyte\\.nuget\\packages\\microsoft.extensions.options.configurationextensions\\8.0.0\\microsoft.extensions.options.configurationextensions.8.0.0.nupkg.sha512",
+    "C:\\Users\\Gigabyte\\.nuget\\packages\\microsoft.extensions.options.dataannotations\\8.0.0\\microsoft.extensions.options.dataannotations.8.0.0.nupkg.sha512",
     "C:\\Users\\Gigabyte\\.nuget\\packages\\microsoft.extensions.primitives\\8.0.0\\microsoft.extensions.primitives.8.0.0.nupkg.sha512",
     "C:\\Users\\Gigabyte\\.nuget\\packages\\mqttnet\\5.1.0.1559\\mqttnet.5.1.0.1559.nupkg.sha512",
     "C:\\Users\\Gigabyte\\.nuget\\packages\\sqlitepclraw.bundle_e_sqlite3\\2.1.6\\sqlitepclraw.bundle_e_sqlite3.2.1.6.nupkg.sha512",

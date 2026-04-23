@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import ReactECharts from 'echarts-for-react';
 import type { MoisturePoint, WateringEventDto, WateringInferredKind } from '../api/client';
 import { moisturePointSeriesKey, resolveSeriesLegendName, sortPointsByTime, uniqueSeriesKeys } from '../utils/chartSeries';
@@ -74,7 +75,7 @@ export function MoistureChart({ points, sensorLegendById, wateringEvents = [], t
         })
       : [];
 
-  const series = seriesKeys.map((key, idx) => {
+  const series = useMemo(() => seriesKeys.map((key, idx) => {
     const forSeries = sortPointsByTime(
       points.filter((p) => moisturePointSeriesKey(p) === key && p.soilMoisture !== null),
     );
@@ -93,8 +94,11 @@ export function MoistureChart({ points, sensorLegendById, wateringEvents = [], t
               silent: false,
             }
           : undefined,
+      sampling: 'lttb' as const,
+      progressive: 1000,
+      progressiveThreshold: 3000,
     };
-  });
+  }), [seriesKeys, points, thresholdLines, wateringVertLines, sensorLegendById]);
 
   const rangeMs = inferRangeMs(points.map((p) => utcIsoToMs(p.utcTime)).filter((n) => !Number.isNaN(n)));
   const option = {
@@ -104,6 +108,7 @@ export function MoistureChart({ points, sensorLegendById, wateringEvents = [], t
     xAxis: echartsTimeXAxisPl(rangeMs),
     yAxis: { type: 'value' as const, name: 'Wilgotność (%)' },
     grid: { left: 50, right: 16, top: title ? 40 : 16, bottom: rangeMs && rangeMs > 48 * 3600_000 ? 56 : 40 },
+    animation: !(rangeMs && rangeMs > 24 * 3600_000),
     series,
   };
 

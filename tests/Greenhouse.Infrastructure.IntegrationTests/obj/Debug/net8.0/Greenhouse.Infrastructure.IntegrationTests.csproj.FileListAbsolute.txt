@@ -144,3 +144,5 @@ C:\Users\Gigabyte\source\repos\GreenhouseProject\tests\Greenhouse.Infrastructure
 C:\Users\Gigabyte\source\repos\GreenhouseProject\tests\Greenhouse.Infrastructure.IntegrationTests\obj\Debug\net8.0\Greenhouse.Infrastructure.IntegrationTests.genruntimeconfig.cache
 C:\Users\Gigabyte\source\repos\GreenhouseProject\tests\Greenhouse.Infrastructure.IntegrationTests\obj\Debug\net8.0\ref\Greenhouse.Infrastructure.IntegrationTests.dll
 C:\Users\Gigabyte\source\repos\GreenhouseProject\tests\Greenhouse.Infrastructure.IntegrationTests\obj\Debug\net8.0\Greenhouse.Infrastructure.IntegrationTests.sourcelink.json
+C:\Users\Gigabyte\source\repos\GreenhouseProject\tests\Greenhouse.Infrastructure.IntegrationTests\bin\Debug\net8.0\Microsoft.Extensions.Options.ConfigurationExtensions.dll
+C:\Users\Gigabyte\source\repos\GreenhouseProject\tests\Greenhouse.Infrastructure.IntegrationTests\bin\Debug\net8.0\Microsoft.Extensions.Options.DataAnnotations.dll

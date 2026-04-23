@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import ReactECharts from 'echarts-for-react';
 import type { WeatherPoint } from '../api/client';
 import { resolveSeriesLegendName } from '../utils/chartSeries';
@@ -33,47 +34,56 @@ export function WeatherChart({
     return <p style={{ color: '#9ca3af', textAlign: 'center' }}>Brak danych pogodowych do wykresu</p>;
   }
 
-  const keys = [...new Set(points.map((p) => (p.sensorId ? p.sensorId : `topic:${p.sensorIdentifier}`)))];
-  const series: object[] = [];
+  const keys = useMemo(
+    () => [...new Set(points.map((p) => (p.sensorId ? p.sensorId : `topic:${p.sensorIdentifier}`)))],
+    [points],
+  );
+  const series: object[] = useMemo(() => {
+    const s: object[] = [];
+    for (const key of keys) {
+      const sensorPoints = [...points]
+        .filter((p) => (p.sensorId ? p.sensorId : `topic:${p.sensorIdentifier}`) === key)
+        .sort((a, b) => utcIsoToMs(a.utcTime) - utcIsoToMs(b.utcTime));
+      const legend = resolveSeriesLegendName(
+        key,
+        sensorPoints.map((p) => ({ sensorIdentifier: p.sensorIdentifier })),
+        sensorLegendById,
+      );
 
-  for (const key of keys) {
-    const sensorPoints = [...points]
-      .filter((p) => (p.sensorId ? p.sensorId : `topic:${p.sensorIdentifier}`) === key)
-      .sort((a, b) => utcIsoToMs(a.utcTime) - utcIsoToMs(b.utcTime));
-    const legend = resolveSeriesLegendName(
-      key,
-      sensorPoints.map((p) => ({ sensorIdentifier: p.sensorIdentifier })),
-      sensorLegendById,
-    );
+      for (const metric of selectedMetrics) {
+        const values = sensorPoints
+          .map((p) => {
+            const y =
+              metric === 'rain'
+                ? p.rain == null
+                  ? null
+                  : p.rain
+                    ? 1
+                    : 0
+                : p[metric];
+            return y == null ? null : [utcIsoToMs(p.utcTime), y];
+          })
+          .filter((x): x is [number, number] => x !== null);
 
-    for (const metric of selectedMetrics) {
-      const values = sensorPoints
-        .map((p) => {
-          const y =
-            metric === 'rain'
-              ? p.rain == null
-                ? null
-                : p.rain
-                  ? 1
-                  : 0
-              : p[metric];
-          return y == null ? null : [utcIsoToMs(p.utcTime), y];
-        })
-        .filter((x): x is [number, number] => x !== null);
+        if (values.length === 0) continue;
 
-      if (values.length === 0) continue;
-
-      series.push({
-        name: `${legend} · ${metricLabel[metric]}`,
-        type: 'line' as const,
-        smooth: metric === 'rain' ? false : true,
-        step: metric === 'rain' ? 'end' : false,
-        symbol: 'none',
-        yAxisIndex: metric === 'rain' ? 1 : 0,
-        data: values,
-      });
+        s.push({
+          name: `${legend} · ${metricLabel[metric]}`,
+          type: 'line' as const,
+          smooth: metric === 'rain' ? false : true,
+          step: metric === 'rain' ? 'end' : false,
+          symbol: 'none',
+          yAxisIndex: metric === 'rain' ? 1 : 0,
+          data: values,
+          sampling: 'lttb' as const,
+          progressive: 1000,
+          progressiveThreshold: 3000,
+        });
+      }
     }
-  }
+
+    return s;
+  }, [keys, points, selectedMetrics, sensorLegendById]);
   const rangeMs = inferRangeMs(points.map((p) => utcIsoToMs(p.utcTime)).filter((n) => !Number.isNaN(n)));
 
   const option = {
@@ -86,6 +96,7 @@ export function WeatherChart({
       { type: 'value' as const, name: 'Opad', min: 0, max: 1, interval: 1 },
     ],
     grid: { left: 52, right: 52, top: 40, bottom: rangeMs && rangeMs > 48 * 3600_000 ? 64 : 56 },
+    animation: !(rangeMs && rangeMs > 24 * 3600_000),
     series,
   };
 

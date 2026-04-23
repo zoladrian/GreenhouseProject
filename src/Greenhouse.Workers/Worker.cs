@@ -24,6 +24,11 @@ public class Worker : BackgroundService
     {
         var options = new MqttOptions();
         _configuration.GetSection(MqttOptions.SectionName).Bind(options);
+        if (!options.Enabled || !options.EnableInWorkerHost)
+        {
+            _logger.LogInformation("MQTT worker ingestion is disabled by configuration.");
+            return;
+        }
 
         var factory = new MqttClientFactory();
         using var client = factory.CreateMqttClient();

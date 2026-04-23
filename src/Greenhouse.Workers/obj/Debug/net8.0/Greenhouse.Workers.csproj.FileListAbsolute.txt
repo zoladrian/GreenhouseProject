@@ -85,3 +85,4 @@ C:\Users\Gigabyte\source\repos\GreenhouseProject\src\Greenhouse.Workers\obj\Debu
 C:\Users\Gigabyte\source\repos\GreenhouseProject\src\Greenhouse.Workers\obj\Debug\net8.0\Greenhouse.Workers.pdb
 C:\Users\Gigabyte\source\repos\GreenhouseProject\src\Greenhouse.Workers\obj\Debug\net8.0\Greenhouse.Workers.genruntimeconfig.cache
 C:\Users\Gigabyte\source\repos\GreenhouseProject\src\Greenhouse.Workers\obj\Debug\net8.0\ref\Greenhouse.Workers.dll
+C:\Users\Gigabyte\source\repos\GreenhouseProject\src\Greenhouse.Workers\bin\Debug\net8.0\Microsoft.Extensions.Options.DataAnnotations.dll

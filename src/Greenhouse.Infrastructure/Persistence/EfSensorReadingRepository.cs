@@ -56,23 +56,27 @@ public sealed class EfSensorReadingRepository : ISensorReadingRepository
             return [];
         }
 
-        var results = new List<SensorReading>();
-
-        foreach (var sensorId in sensorIds)
-        {
-            var latest = await _dbContext.SensorReadings
-                .AsNoTracking()
-                .Where(r => r.SensorId == sensorId)
-                .OrderByDescending(r => r.ReceivedAtUtc)
-                .FirstOrDefaultAsync(cancellationToken);
-
-            if (latest is not null)
+        var latestTimestamps = _dbContext.SensorReadings
+            .AsNoTracking()
+            .Where(r => r.SensorId.HasValue && sensorIds.Contains(r.SensorId.Value))
+            .GroupBy(r => r.SensorId!.Value)
+            .Select(g => new
             {
-                results.Add(latest);
-            }
-        }
+                SensorId = g.Key,
+                LatestReceivedAtUtc = g.Max(x => x.ReceivedAtUtc)
+            });
 
-        return results;
+        var rows = await (from r in _dbContext.SensorReadings.AsNoTracking()
+                          join lt in latestTimestamps
+                              on new { SensorId = r.SensorId!.Value, r.ReceivedAtUtc }
+                              equals new { lt.SensorId, ReceivedAtUtc = lt.LatestReceivedAtUtc }
+                          select r)
+            .ToListAsync(cancellationToken);
+
+        return rows
+            .GroupBy(x => x.SensorId)
+            .Select(g => g.OrderByDescending(x => x.Id).First())
+            .ToList();
     }
 
     public async Task<string?> TryGetNormalizedIeeeFromLatestReadingAsync(Guid sensorId, CancellationToken cancellationToken)
@@ -123,5 +127,25 @@ public sealed class EfSensorReadingRepository : ISensorReadingRepository
                   AND s.ExternalId != SensorReadings.SensorIdentifier)
             """,
             cancellationToken);
+    }
+
+    public async Task<bool> ExistsDuplicateAsync(
+        string sensorIdentifier,
+        DateTime receivedAtUtc,
+        string topic,
+        string rawPayloadJson,
+        CancellationToken cancellationToken)
+    {
+        var from = receivedAtUtc.AddSeconds(-2);
+        var to = receivedAtUtc.AddSeconds(2);
+        return await _dbContext.SensorReadings
+            .AsNoTracking()
+            .AnyAsync(r =>
+                r.SensorIdentifier == sensorIdentifier &&
+                r.Topic == topic &&
+                r.RawPayloadJson == rawPayloadJson &&
+                r.ReceivedAtUtc >= from &&
+                r.ReceivedAtUtc <= to,
+                cancellationToken);
     }
 }

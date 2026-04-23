@@ -90,6 +90,17 @@ public sealed class MqttMessageIngestionService : IMqttMessageIngestionService
             parsed.CleaningReminder,
             ensured.SensorId);
 
+        if (await _readingRepository.ExistsDuplicateAsync(
+                reading.SensorIdentifier,
+                reading.ReceivedAtUtc,
+                reading.Topic,
+                reading.RawPayloadJson,
+                cancellationToken))
+        {
+            _logger.LogDebug("MQTT pominięto duplikat odczytu ExternalId={ExternalId}, topic={Topic}", externalId, message.Topic);
+            return;
+        }
+
         await _readingRepository.AddAsync(reading, cancellationToken);
         _telemetry.NotifyReadingPersisted();
 

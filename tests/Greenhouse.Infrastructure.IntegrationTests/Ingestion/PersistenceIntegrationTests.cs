@@ -142,4 +142,37 @@ public sealed class PersistenceIntegrationTests
         Assert.Equal(910m, row.IlluminanceMaximumTodayRaw);
         Assert.False(row.CleaningReminder);
     }
+
+    [Fact]
+    public async Task IngestAsync_ShouldSkipDuplicatePayload_InShortWindow()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+
+        var dbOptions = new DbContextOptionsBuilder<GreenhouseDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var dbContext = new GreenhouseDbContext(dbOptions);
+        await dbContext.Database.EnsureCreatedAsync();
+
+        IMqttPayloadParser parser = new JsonMqttPayloadParser();
+        ISensorReadingRepository repository = new EfSensorReadingRepository(dbContext, parser);
+        ISensorRepository sensorRepository = new EfSensorRepository(dbContext);
+        var provisioning = new SensorProvisioningService(sensorRepository, repository);
+        var service = new MqttMessageIngestionService(
+            parser,
+            repository,
+            provisioning,
+            Microsoft.Extensions.Logging.Abstractions.NullLogger<MqttMessageIngestionService>.Instance,
+            new MqttIngestTelemetry());
+
+        var at = DateTime.UtcNow;
+        var payload = "{\"soil_moisture\":38,\"temperature\":22.1}";
+        await service.IngestAsync(new IncomingMqttMessage("zigbee2mqtt/dupe", payload, at), CancellationToken.None);
+        await service.IngestAsync(new IncomingMqttMessage("zigbee2mqtt/dupe", payload, at.AddSeconds(1)), CancellationToken.None);
+
+        var latest = await repository.GetLatestAsync(10, CancellationToken.None);
+        Assert.Single(latest);
+    }
 }

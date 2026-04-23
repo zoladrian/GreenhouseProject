@@ -214,5 +214,12 @@ public sealed class MqttMessageIngestionServiceTests
 
         public Task<int> AlignAllLinkedReadingSensorIdentifiersAsync(CancellationToken cancellationToken) =>
             Task.FromResult(0);
+
+        public Task<bool> ExistsDuplicateAsync(string sensorIdentifier, DateTime receivedAtUtc, string topic, string rawPayloadJson, CancellationToken cancellationToken) =>
+            Task.FromResult(Items.Any(x =>
+                x.SensorIdentifier == sensorIdentifier &&
+                x.Topic == topic &&
+                x.RawPayloadJson == rawPayloadJson &&
+                Math.Abs((x.ReceivedAtUtc - receivedAtUtc).TotalSeconds) <= 2));
     }
 }

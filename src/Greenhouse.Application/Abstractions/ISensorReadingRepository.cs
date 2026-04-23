@@ -30,4 +30,12 @@ public interface ISensorReadingRepository
     /// Dla każdego odczytu z ustawionym <c>SensorId</c> ustawia identyfikator na <c>ExternalId</c> powiązanego rekordu czujnika (idempotentne).
     /// </summary>
     Task<int> AlignAllLinkedReadingSensorIdentifiersAsync(CancellationToken cancellationToken);
+
+    /// <summary>Sprawdza, czy odczyt wygląda na duplikat już zapisanego wpisu ingestu.</summary>
+    Task<bool> ExistsDuplicateAsync(
+        string sensorIdentifier,
+        DateTime receivedAtUtc,
+        string topic,
+        string rawPayloadJson,
+        CancellationToken cancellationToken);
 }

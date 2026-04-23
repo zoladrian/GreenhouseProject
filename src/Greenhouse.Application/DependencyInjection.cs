@@ -7,6 +7,7 @@ using Greenhouse.Application.Sensors;
 using Greenhouse.Application.Voice;
 using Greenhouse.Application.Weather;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 namespace Greenhouse.Application;
 
@@ -43,6 +44,7 @@ public static class DependencyInjection
 
         services.AddScoped<GetVoiceDailyReportQueryService>();
         services.AddScoped<GetNawaVoiceBriefQueryService>();
+        services.AddSingleton<IValidateOptions<WeatherInterpretationOptions>, WeatherInterpretationOptionsValidator>();
 
         return services;
     }

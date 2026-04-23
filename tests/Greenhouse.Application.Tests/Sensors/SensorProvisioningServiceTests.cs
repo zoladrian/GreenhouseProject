@@ -92,5 +92,8 @@ public sealed class SensorProvisioningServiceTests
 
         public Task<int> AlignAllLinkedReadingSensorIdentifiersAsync(CancellationToken cancellationToken) =>
             Task.FromResult(0);
+
+        public Task<bool> ExistsDuplicateAsync(string sensorIdentifier, DateTime receivedAtUtc, string topic, string rawPayloadJson, CancellationToken cancellationToken) =>
+            Task.FromResult(false);
     }
 }
