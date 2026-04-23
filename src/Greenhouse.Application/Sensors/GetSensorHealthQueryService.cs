@@ -39,9 +39,14 @@ public sealed class GetSensorHealthQueryService
                 sensor.Id,
                 sensor.ExternalId,
                 sensor.DisplayName,
+                sensor.Kind.ToString(),
                 sensor.NawaId,
                 latest?.Battery,
                 latest?.LinkQuality,
+                latest?.CleaningReminder,
+                latest?.Rain,
+                latest?.RainIntensityRaw,
+                latest?.IlluminanceRaw,
                 latest?.ReceivedAtUtc,
                 count24h);
         }).ToList();

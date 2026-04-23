@@ -101,4 +101,45 @@ public sealed class PersistenceIntegrationTests
         var latest = await repository.GetLatestAsync(10, CancellationToken.None);
         Assert.All(latest, r => Assert.Equal(sensors[0].Id, r.SensorId));
     }
+
+    [Fact]
+    public async Task IngestAsync_ShouldPersistWeatherFieldsToSqlite()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+
+        var dbOptions = new DbContextOptionsBuilder<GreenhouseDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using var dbContext = new GreenhouseDbContext(dbOptions);
+        await dbContext.Database.EnsureCreatedAsync();
+
+        IMqttPayloadParser parser = new JsonMqttPayloadParser();
+        ISensorReadingRepository repository = new EfSensorReadingRepository(dbContext, parser);
+        ISensorRepository sensorRepository = new EfSensorRepository(dbContext);
+        var provisioning = new SensorProvisioningService(sensorRepository, repository);
+        var service = new MqttMessageIngestionService(
+            parser,
+            repository,
+            provisioning,
+            Microsoft.Extensions.Logging.Abstractions.NullLogger<MqttMessageIngestionService>.Instance,
+            new MqttIngestTelemetry());
+
+        var message = new IncomingMqttMessage(
+            "zigbee2mqtt/Deszcz_1",
+            "{\"rain\":true,\"rain_intensity\":15,\"illuminance_raw\":515,\"illuminance_average_20min\":490,\"illuminance_maximum_today\":910,\"cleaning_reminder\":false}",
+            DateTime.UtcNow);
+
+        await service.IngestAsync(message, CancellationToken.None);
+        var latest = await repository.GetLatestAsync(1, CancellationToken.None);
+
+        var row = Assert.Single(latest);
+        Assert.True(row.Rain);
+        Assert.Equal(15m, row.RainIntensityRaw);
+        Assert.Equal(515m, row.IlluminanceRaw);
+        Assert.Equal(490m, row.IlluminanceAverage20MinRaw);
+        Assert.Equal(910m, row.IlluminanceMaximumTodayRaw);
+        Assert.False(row.CleaningReminder);
+    }
 }

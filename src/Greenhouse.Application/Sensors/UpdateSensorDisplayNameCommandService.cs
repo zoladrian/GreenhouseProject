@@ -27,6 +27,7 @@ public sealed class UpdateSensorDisplayNameCommandService
 
         return new SensorListItemDto(
             sensor.Id, sensor.ExternalId, sensor.DisplayName,
+            sensor.Kind.ToString(),
             sensor.NawaId, sensor.CreatedAtUtc);
     }
 }

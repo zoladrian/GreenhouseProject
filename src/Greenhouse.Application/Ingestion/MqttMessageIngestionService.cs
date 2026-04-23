@@ -1,5 +1,6 @@
 using Greenhouse.Application.Abstractions;
 using Greenhouse.Domain.SensorReadings;
+using Greenhouse.Domain.Sensors;
 using Microsoft.Extensions.Logging;
 
 namespace Greenhouse.Application.Ingestion;
@@ -45,19 +46,21 @@ public sealed class MqttMessageIngestionService : IMqttMessageIngestionService
             : sensorIdentifier;
 
         var hasMetric = parsed.SoilMoisture.HasValue || parsed.Temperature.HasValue || parsed.Battery.HasValue ||
-                        parsed.LinkQuality.HasValue;
+                        parsed.LinkQuality.HasValue || parsed.Rain.HasValue || parsed.RainIntensityRaw.HasValue ||
+                        parsed.IlluminanceRaw.HasValue || parsed.IlluminanceAverage20MinRaw.HasValue ||
+                        parsed.IlluminanceMaximumTodayRaw.HasValue || parsed.CleaningReminder.HasValue;
         var payloadTrim = message.Payload.TrimStart();
         if (!hasMetric && payloadTrim.StartsWith('{'))
         {
             _logger.LogDebug(
-                "MQTT topic={Topic}, czujnik={Sensor}: JSON bez pól soil_moisture/temperature/battery/linkquality (tryb attribute w Z2M?). Fragment={Snippet}",
+                "MQTT topic={Topic}, czujnik={Sensor}: JSON bez obsługiwanych pól metryk (tryb attribute w Z2M?). Fragment={Snippet}",
                 message.Topic,
                 externalId,
                 Snippet(message.Payload, 160));
         }
 
         var ensured = await _sensorProvisioning.EnsureSensorAsync(
-            new EnsureSensorInput(sensorIdentifier, externalId),
+            new EnsureSensorInput(sensorIdentifier, externalId, ResolveSensorKind(parsed)),
             cancellationToken);
         if (ensured.CreatedNew)
         {
@@ -79,18 +82,27 @@ public sealed class MqttMessageIngestionService : IMqttMessageIngestionService
             parsed.Temperature,
             parsed.Battery,
             parsed.LinkQuality,
+            parsed.Rain,
+            parsed.RainIntensityRaw,
+            parsed.IlluminanceRaw,
+            parsed.IlluminanceAverage20MinRaw,
+            parsed.IlluminanceMaximumTodayRaw,
+            parsed.CleaningReminder,
             ensured.SensorId);
 
         await _readingRepository.AddAsync(reading, cancellationToken);
         _telemetry.NotifyReadingPersisted();
 
         _logger.LogTrace(
-            "MQTT zapis odczytu ExternalId={ExternalId}, wilgotność={M}, temp={T}, bateria={B}, LQ={Lq}",
+            "MQTT zapis odczytu ExternalId={ExternalId}, wilgotność={M}, temp={T}, bateria={B}, LQ={Lq}, rain={Rain}, rain_intensity={RainIntensity}, illum_raw={IllRaw}",
             externalId,
             parsed.SoilMoisture,
             parsed.Temperature,
             parsed.Battery,
-            parsed.LinkQuality);
+            parsed.LinkQuality,
+            parsed.Rain,
+            parsed.RainIntensityRaw,
+            parsed.IlluminanceRaw);
     }
 
     private static string Snippet(string text, int maxLen)
@@ -144,5 +156,17 @@ public sealed class MqttMessageIngestionService : IMqttMessageIngestionService
 
         skipReason = "";
         return true;
+    }
+
+    private static SensorKind ResolveSensorKind(ParsedSensorPayload parsed)
+    {
+        var hasWeather = parsed.Rain.HasValue || parsed.RainIntensityRaw.HasValue ||
+                         parsed.IlluminanceRaw.HasValue || parsed.IlluminanceAverage20MinRaw.HasValue ||
+                         parsed.IlluminanceMaximumTodayRaw.HasValue || parsed.CleaningReminder.HasValue;
+        if (hasWeather)
+            return SensorKind.Weather;
+
+        var hasSoil = parsed.SoilMoisture.HasValue || parsed.Temperature.HasValue;
+        return hasSoil ? SensorKind.Soil : SensorKind.Unknown;
     }
 }

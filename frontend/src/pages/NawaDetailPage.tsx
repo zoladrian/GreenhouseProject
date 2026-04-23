@@ -5,16 +5,17 @@ import { speakPolish } from '../hooks/useTts';
 import { MoistureChart } from '../components/MoistureChart';
 import { TemperatureChart } from '../components/TemperatureChart';
 import { BatteryChart } from '../components/BatteryChart';
+import { WeatherChart, type WeatherMetricKey } from '../components/WeatherChart';
 import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { NawyPageBackdrop } from '../components/NawyPageBackdrop';
 
-type RangePreset = '6h' | '24h' | '48h' | '7d' | '30d' | 'custom';
+type RangePreset = '1h' | '6h' | '24h' | '7d' | '30d' | 'custom';
 
 const PRESET_HOURS: Record<Exclude<RangePreset, 'custom'>, number> = {
+  '1h': 1,
   '6h': 6,
   '24h': 24,
-  '48h': 48,
   '7d': 168,
   '30d': 720,
 };
@@ -32,6 +33,11 @@ export function NawaDetailPage() {
   const [rangePreset, setRangePreset] = useState<RangePreset>('24h');
   const [customFrom, setCustomFrom] = useState('');
   const [customTo, setCustomTo] = useState('');
+  const [weatherMetrics, setWeatherMetrics] = useState<WeatherMetricKey[]>([
+    'rain',
+    'rainIntensityRaw',
+    'illuminanceRaw',
+  ]);
 
   const { from, to } = useMemo(() => {
     const now = Date.now();
@@ -47,6 +53,7 @@ export function NawaDetailPage() {
   }, [rangePreset, customFrom, customTo]);
 
   const { data: points } = useFetch(() => api.getMoistureSeries(`nawaId=${id}&from=${from}&to=${to}`), [id, from, to]);
+  const { data: weatherPoints } = useFetch(() => api.getWeatherSeries(`nawaId=${id}&from=${from}&to=${to}`), [id, from, to]);
   const { data: wateringEvents } = useFetch(() => api.getWateringEvents(id!, from, to), [id, from, to]);
   const { data: dryingRates } = useFetch(() => api.getDryingRates(id!, from, to), [id, from, to]);
 
@@ -62,6 +69,11 @@ export function NawaDetailPage() {
   const [saveMsg, setSaveMsg] = useState<string | null>(null);
   const [voiceBriefLoading, setVoiceBriefLoading] = useState(false);
   const [voiceBriefError, setVoiceBriefError] = useState<string | null>(null);
+  const latestWeather = useMemo(() => {
+    const rows = weatherPoints ?? [];
+    if (!rows.length) return null;
+    return [...rows].sort((a, b) => new Date(b.utcTime).getTime() - new Date(a.utcTime).getTime())[0];
+  }, [weatherPoints]);
 
   useEffect(() => {
     if (!detail) return;
@@ -312,8 +324,8 @@ export function NawaDetailPage() {
               style={rangePreset === key ? btnPrimary : btnGhost}
             >
               {key === '6h' && '6 h'}
+              {key === '1h' && '1 h'}
               {key === '24h' && '24 h'}
-              {key === '48h' && '48 h'}
               {key === '7d' && '7 dni'}
               {key === '30d' && '30 dni'}
             </button>
@@ -359,6 +371,66 @@ export function NawaDetailPage() {
       </div>
       <div className="nawa-glass nawa-chart-shell">
         <BatteryChart points={points ?? []} sensorLegendById={sensorLegendById} />
+      </div>
+      <div className="nawa-glass nawa-chart-shell">
+        <h3 style={{ fontSize: 14, marginBottom: 10 }}>Serie pogodowe</h3>
+        {latestWeather && (
+          <p style={{ fontSize: 12, color: '#475569', marginBottom: 10 }}>
+            Ostatni status: opad{' '}
+            <strong>{latestWeather.rain ? 'wykryto' : latestWeather.rain == null ? '—' : 'brak'}</strong>, poziom opadu{' '}
+            <strong>{rainLevelLabel(latestWeather.rainLevel)}</strong>, poziom jasności{' '}
+            <strong>{lightLevelLabel(latestWeather.lightLevel)}</strong>, czyszczenie{' '}
+            <strong>
+              {latestWeather.cleaningReminder == null
+                ? '—'
+                : latestWeather.cleaningReminder
+                  ? 'wymagane'
+                  : 'OK'}
+            </strong>.
+          </p>
+        )}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
+          {(
+            [
+              ['rain', 'Wykrycie opadu'],
+              ['rainIntensityRaw', 'Intensywność opadu (surowa)'],
+              ['illuminanceRaw', 'Jasność surowa'],
+              ['illuminanceAverage20MinRaw', 'Jasność średnia 20 min'],
+              ['illuminanceMaximumTodayRaw', 'Maks. jasność dziś'],
+              ['battery', 'Bateria'],
+            ] as Array<[WeatherMetricKey, string]>
+          ).map(([key, label]) => {
+            const checked = weatherMetrics.includes(key);
+            return (
+              <label
+                key={key}
+                style={{
+                  display: 'inline-flex',
+                  gap: 6,
+                  alignItems: 'center',
+                  background: checked ? '#dcfce7' : '#f8fafc',
+                  border: checked ? '1px solid #86efac' : '1px solid #e2e8f0',
+                  borderRadius: 999,
+                  padding: '4px 10px',
+                  fontSize: 12,
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  onChange={(e) => {
+                    setWeatherMetrics((prev) => {
+                      if (e.target.checked) return [...prev, key];
+                      return prev.filter((x) => x !== key);
+                    });
+                  }}
+                />
+                {label}
+              </label>
+            );
+          })}
+        </div>
+        <WeatherChart points={weatherPoints ?? []} selectedMetrics={weatherMetrics} sensorLegendById={sensorLegendById} />
       </div>
 
       {dryingRates && dryingRates.length > 0 && (
@@ -463,4 +535,38 @@ function InfoCard({ label, value }: { label: string; value: string }) {
       <div style={{ fontSize: 14, fontWeight: 600 }}>{value}</div>
     </div>
   );
+}
+
+function rainLevelLabel(v: number | null): string {
+  switch (v) {
+    case 0:
+      return 'Brak opadu';
+    case 1:
+      return 'Rosa / mgła / wilgoć';
+    case 2:
+      return 'Lekki opad';
+    case 3:
+      return 'Umiarkowany opad';
+    case 4:
+      return 'Silny opad';
+    default:
+      return '—';
+  }
+}
+
+function lightLevelLabel(v: number | null): string {
+  switch (v) {
+    case 0:
+      return 'Noc';
+    case 1:
+      return 'Ciemno / pochmurno';
+    case 2:
+      return 'Jasno';
+    case 3:
+      return 'Słonecznie';
+    case 4:
+      return 'Pełne słońce';
+    default:
+      return '—';
+  }
 }

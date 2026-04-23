@@ -43,6 +43,7 @@ public sealed class GreenhouseDbContext : DbContext
             builder.Property(x => x.ExternalId).HasMaxLength(120).IsRequired();
             builder.HasIndex(x => x.ExternalId).IsUnique();
             builder.Property(x => x.DisplayName).HasMaxLength(120);
+            builder.Property(x => x.Kind).IsRequired();
             builder.Property(x => x.CreatedAtUtc).IsRequired();
             builder.HasOne<Nawa>()
                 .WithMany()
@@ -58,6 +59,12 @@ public sealed class GreenhouseDbContext : DbContext
             builder.Property(x => x.Topic).HasMaxLength(255).IsRequired();
             builder.Property(x => x.RawPayloadJson).IsRequired();
             builder.Property(x => x.ReceivedAtUtc).IsRequired();
+            builder.Property(x => x.Rain);
+            builder.Property(x => x.RainIntensityRaw);
+            builder.Property(x => x.IlluminanceRaw);
+            builder.Property(x => x.IlluminanceAverage20MinRaw);
+            builder.Property(x => x.IlluminanceMaximumTodayRaw);
+            builder.Property(x => x.CleaningReminder);
             builder.HasIndex(x => x.ReceivedAtUtc);
             builder.HasIndex(x => x.SensorIdentifier);
             builder.HasIndex(x => new { x.SensorId, x.ReceivedAtUtc });

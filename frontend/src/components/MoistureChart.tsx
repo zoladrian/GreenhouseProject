@@ -1,7 +1,7 @@
 import ReactECharts from 'echarts-for-react';
 import type { MoisturePoint, WateringEventDto, WateringInferredKind } from '../api/client';
 import { moisturePointSeriesKey, resolveSeriesLegendName, sortPointsByTime, uniqueSeriesKeys } from '../utils/chartSeries';
-import { echartsAxisTooltipPl, echartsTimeXAxisPl, utcIsoToMs } from '../utils/chartTimePl';
+import { echartsAxisTooltipPl, echartsTimeXAxisPl, inferRangeMs, utcIsoToMs } from '../utils/chartTimePl';
 
 interface Props {
   points: MoisturePoint[];
@@ -96,13 +96,14 @@ export function MoistureChart({ points, sensorLegendById, wateringEvents = [], t
     };
   });
 
+  const rangeMs = inferRangeMs(points.map((p) => utcIsoToMs(p.utcTime)).filter((n) => !Number.isNaN(n)));
   const option = {
     title: title ? { text: title, left: 'center', textStyle: { fontSize: 14 } } : undefined,
     tooltip: echartsAxisTooltipPl(),
     legend: { bottom: 0, textStyle: { fontSize: 11 } },
-    xAxis: echartsTimeXAxisPl(),
+    xAxis: echartsTimeXAxisPl(rangeMs),
     yAxis: { type: 'value' as const, name: 'Wilgotność (%)' },
-    grid: { left: 50, right: 16, top: title ? 40 : 16, bottom: 40 },
+    grid: { left: 50, right: 16, top: title ? 40 : 16, bottom: rangeMs && rangeMs > 48 * 3600_000 ? 56 : 40 },
     series,
   };
 

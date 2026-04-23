@@ -99,6 +99,9 @@ export function SensorsPage() {
               {s.displayName && (
                 <div style={{ fontSize: 11, color: '#94a3b8', wordBreak: 'break-word' }}>{s.externalId}</div>
               )}
+              <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>
+                Typ: {s.kind === 'Weather' ? 'Pogodowy' : s.kind === 'Soil' ? 'Gleba/temperatura' : 'Nieznany'}
+              </div>
             </div>
             <BatteryIcon level={s.battery} />
           </div>
@@ -106,6 +109,13 @@ export function SensorsPage() {
           <div style={{ display: 'flex', gap: 12, marginTop: 8, fontSize: 12, color: '#64748b', flexWrap: 'wrap' }}>
             <span>📶 LQ: {s.linkQuality ?? '—'}</span>
             <span>📊 Odczyty 24h: {s.totalReadings24h}</span>
+            {s.kind === 'Weather' && (
+              <>
+                <span>🌧️ Opad: {s.rain == null ? '—' : s.rain ? 'wykryto' : 'brak'}</span>
+                <span>🔆 Jasność surowa: {s.illuminanceRaw ?? '—'}</span>
+                <span>🧽 Czyszczenie: {s.cleaningReminder == null ? '—' : s.cleaningReminder ? 'wymagane' : 'OK'}</span>
+              </>
+            )}
             <span>
               ⏱️{' '}
               {s.lastReadingUtc

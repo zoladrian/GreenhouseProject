@@ -24,6 +24,7 @@ public sealed class SensorProvisioningService : ISensorProvisioningService
         if (byCanonical is not null)
         {
             SyncDisplayNameFromMqtt(byCanonical, friendly);
+            byCanonical.UpdateKind(input.KindHint);
             await _sensors.SaveChangesAsync(cancellationToken);
             return new SensorEnsureResult(byCanonical.Id, CreatedNew: false);
         }
@@ -36,6 +37,7 @@ public sealed class SensorProvisioningService : ISensorProvisioningService
             {
                 byFriendly.RekeyExternalId(canonical);
                 SyncDisplayNameFromMqtt(byFriendly, friendly);
+                byFriendly.UpdateKind(input.KindHint);
                 await _sensors.SaveChangesAsync(cancellationToken);
                 await _readings.AlignSensorIdentifierForSensorAsync(byFriendly.Id, canonical, cancellationToken);
                 return new SensorEnsureResult(byFriendly.Id, CreatedNew: false);
@@ -57,13 +59,14 @@ public sealed class SensorProvisioningService : ISensorProvisioningService
 
                 legacyTracked.RekeyExternalId(canonical);
                 SyncDisplayNameFromMqtt(legacyTracked, friendly);
+                legacyTracked.UpdateKind(input.KindHint);
                 await _sensors.SaveChangesAsync(cancellationToken);
                 await _readings.AlignSensorIdentifierForSensorAsync(legacyTracked.Id, canonical, cancellationToken);
                 return new SensorEnsureResult(legacyTracked.Id, CreatedNew: false);
             }
         }
 
-        var sensor = Sensor.Register(canonical);
+        var sensor = Sensor.Register(canonical, input.KindHint);
         SyncDisplayNameFromMqtt(sensor, friendly);
         await _sensors.AddAsync(sensor, cancellationToken);
         return new SensorEnsureResult(sensor.Id, CreatedNew: true);

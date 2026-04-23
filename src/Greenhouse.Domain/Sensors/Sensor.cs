@@ -15,11 +15,13 @@ public sealed class Sensor
 
     public string? DisplayName { get; private set; }
 
+    public SensorKind Kind { get; private set; }
+
     public Guid? NawaId { get; private set; }
 
     public DateTime CreatedAtUtc { get; private set; }
 
-    public static Sensor Register(string externalId)
+    public static Sensor Register(string externalId, SensorKind kind = SensorKind.Unknown)
     {
         if (string.IsNullOrWhiteSpace(externalId))
         {
@@ -37,6 +39,7 @@ public sealed class Sensor
             Id = Guid.NewGuid(),
             ExternalId = trimmed,
             DisplayName = null,
+            Kind = kind,
             NawaId = null,
             CreatedAtUtc = DateTime.UtcNow
         };
@@ -86,5 +89,12 @@ public sealed class Sensor
     public void UnassignFromNawa()
     {
         NawaId = null;
+    }
+
+    public void UpdateKind(SensorKind kind)
+    {
+        if (kind == SensorKind.Unknown)
+            return;
+        Kind = kind;
     }
 }

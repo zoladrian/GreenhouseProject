@@ -72,6 +72,7 @@ export interface SensorListItem {
   id: string;
   externalId: string;
   displayName: string | null;
+  kind: string;
   nawaId: string | null;
   createdAtUtc: string;
 }
@@ -80,9 +81,14 @@ export interface SensorHealthDto {
   sensorId: string;
   externalId: string;
   displayName: string | null;
+  kind: string;
   nawaId: string | null;
   battery: number | null;
   linkQuality: number | null;
+  cleaningReminder: boolean | null;
+  rain: boolean | null;
+  rainIntensityRaw: number | null;
+  illuminanceRaw: number | null;
   lastReadingUtc: string | null;
   totalReadings24h: number;
 }
@@ -95,6 +101,22 @@ export interface MoisturePoint {
   temperature: number | null;
   battery: number | null;
   linkQuality: number | null;
+}
+
+export interface WeatherPoint {
+  utcTime: string;
+  sensorIdentifier: string;
+  sensorId: string | null;
+  rain: boolean | null;
+  rainIntensityRaw: number | null;
+  illuminanceRaw: number | null;
+  illuminanceAverage20MinRaw: number | null;
+  illuminanceMaximumTodayRaw: number | null;
+  battery: number | null;
+  linkQuality: number | null;
+  cleaningReminder: boolean | null;
+  rainLevel: number | null;
+  lightLevel: number | null;
 }
 
 /** Z API (camelCase enum z .NET). */
@@ -180,6 +202,7 @@ export const api = {
     }
   },
   getMoistureSeries: (params: string) => fetchJson<MoisturePoint[]>(`/chart/moisture?${params}`),
+  getWeatherSeries: (params: string) => fetchJson<WeatherPoint[]>(`/chart/weather?${params}`),
   getWateringEvents: (nawaId: string, from?: string, to?: string) => {
     let qs = `nawaId=${nawaId}`;
     if (from) qs += `&from=${from}`;

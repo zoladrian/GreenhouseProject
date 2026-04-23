@@ -39,7 +39,7 @@ public sealed class GetNawaDetailQueryService
         var nawaSensors = allSensors
             .Where(s => s.NawaId == nawa.Id)
             .OrderBy(s => s.ExternalId)
-            .Select(s => new SensorListItemDto(s.Id, s.ExternalId, s.DisplayName, s.NawaId, s.CreatedAtUtc))
+            .Select(s => new SensorListItemDto(s.Id, s.ExternalId, s.DisplayName, s.Kind.ToString(), s.NawaId, s.CreatedAtUtc))
             .ToList();
 
         return new NawaDetailDto(

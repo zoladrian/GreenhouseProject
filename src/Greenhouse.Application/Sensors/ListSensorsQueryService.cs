@@ -16,7 +16,7 @@ public sealed class ListSensorsQueryService
         var list = await _sensors.ListAsync(cancellationToken);
         return list
             .OrderBy(s => s.ExternalId)
-            .Select(s => new SensorListItemDto(s.Id, s.ExternalId, s.DisplayName, s.NawaId, s.CreatedAtUtc))
+            .Select(s => new SensorListItemDto(s.Id, s.ExternalId, s.DisplayName, s.Kind.ToString(), s.NawaId, s.CreatedAtUtc))
             .ToList();
     }
 }

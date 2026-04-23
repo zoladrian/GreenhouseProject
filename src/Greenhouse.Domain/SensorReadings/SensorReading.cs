@@ -27,6 +27,18 @@ public sealed class SensorReading
 
     public int? LinkQuality { get; private set; }
 
+    public bool? Rain { get; private set; }
+
+    public decimal? RainIntensityRaw { get; private set; }
+
+    public decimal? IlluminanceRaw { get; private set; }
+
+    public decimal? IlluminanceAverage20MinRaw { get; private set; }
+
+    public decimal? IlluminanceMaximumTodayRaw { get; private set; }
+
+    public bool? CleaningReminder { get; private set; }
+
     /// <summary>
     /// Opcjonalne powiązanie z zarejestrowanym czujnikiem w systemie (klucz obcy).
     /// </summary>
@@ -41,6 +53,41 @@ public sealed class SensorReading
         decimal? temperature,
         int? battery,
         int? linkQuality,
+        Guid? sensorId)
+    {
+        return Create(
+            sensorIdentifier,
+            receivedAtUtc,
+            topic,
+            rawPayloadJson,
+            soilMoisture,
+            temperature,
+            battery,
+            linkQuality,
+            rain: null,
+            rainIntensityRaw: null,
+            illuminanceRaw: null,
+            illuminanceAverage20MinRaw: null,
+            illuminanceMaximumTodayRaw: null,
+            cleaningReminder: null,
+            sensorId: sensorId);
+    }
+
+    public static SensorReading Create(
+        string sensorIdentifier,
+        DateTime receivedAtUtc,
+        string topic,
+        string rawPayloadJson,
+        decimal? soilMoisture,
+        decimal? temperature,
+        int? battery,
+        int? linkQuality,
+        bool? rain = null,
+        decimal? rainIntensityRaw = null,
+        decimal? illuminanceRaw = null,
+        decimal? illuminanceAverage20MinRaw = null,
+        decimal? illuminanceMaximumTodayRaw = null,
+        bool? cleaningReminder = null,
         Guid? sensorId = null)
     {
         if (string.IsNullOrWhiteSpace(sensorIdentifier))
@@ -69,6 +116,12 @@ public sealed class SensorReading
             Temperature = temperature,
             Battery = battery,
             LinkQuality = linkQuality,
+            Rain = rain,
+            RainIntensityRaw = rainIntensityRaw,
+            IlluminanceRaw = illuminanceRaw,
+            IlluminanceAverage20MinRaw = illuminanceAverage20MinRaw,
+            IlluminanceMaximumTodayRaw = illuminanceMaximumTodayRaw,
+            CleaningReminder = cleaningReminder,
             SensorId = sensorId
         };
     }

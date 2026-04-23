@@ -9,4 +9,10 @@ public sealed record SensorReadingDto(
     decimal? SoilMoisture,
     decimal? Temperature,
     int? Battery,
-    int? LinkQuality);
+    int? LinkQuality,
+    bool? Rain,
+    decimal? RainIntensityRaw,
+    decimal? IlluminanceRaw,
+    decimal? IlluminanceAverage20MinRaw,
+    decimal? IlluminanceMaximumTodayRaw,
+    bool? CleaningReminder);

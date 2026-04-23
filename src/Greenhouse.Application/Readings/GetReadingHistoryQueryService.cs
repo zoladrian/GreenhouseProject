@@ -24,7 +24,9 @@ public sealed class GetReadingHistoryQueryService
             .Select(r => new SensorReadingDto(
                 r.Id, r.SensorIdentifier, r.ReceivedAtUtc,
                 r.Topic, r.RawPayloadJson,
-                r.SoilMoisture, r.Temperature, r.Battery, r.LinkQuality))
+                r.SoilMoisture, r.Temperature, r.Battery, r.LinkQuality,
+                r.Rain, r.RainIntensityRaw, r.IlluminanceRaw, r.IlluminanceAverage20MinRaw,
+                r.IlluminanceMaximumTodayRaw, r.CleaningReminder))
             .ToList();
     }
 }

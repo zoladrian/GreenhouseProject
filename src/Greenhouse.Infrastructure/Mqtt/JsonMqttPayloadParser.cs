@@ -27,7 +27,13 @@ public sealed class JsonMqttPayloadParser : IMqttPayloadParser
                 TryGetDecimal(root, "temperature"),
                 TryGetBatteryPercent(root, "battery"),
                 TryGetInt(root, "linkquality"),
-                TryGetIeeeRaw(root));
+                TryGetIeeeRaw(root),
+                TryGetBool(root, "rain"),
+                TryGetDecimal(root, "rain_intensity"),
+                TryGetDecimal(root, "illuminance_raw"),
+                TryGetDecimal(root, "illuminance_average_20min"),
+                TryGetDecimal(root, "illuminance_maximum_today"),
+                TryGetBool(root, "cleaning_reminder"));
         }
         catch (JsonException)
         {
@@ -84,6 +90,39 @@ public sealed class JsonMqttPayloadParser : IMqttPayloadParser
         }
 
         return null;
+    }
+
+    private static bool? TryGetBool(JsonElement root, string propertyName)
+    {
+        if (!root.TryGetProperty(propertyName, out var element))
+        {
+            return null;
+        }
+
+        return element.ValueKind switch
+        {
+            JsonValueKind.True => true,
+            JsonValueKind.False => false,
+            JsonValueKind.Number when element.TryGetInt32(out var i) => i != 0,
+            JsonValueKind.String => ParseBoolLike(element.GetString()),
+            _ => null
+        };
+    }
+
+    private static bool? ParseBoolLike(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return null;
+        }
+
+        var t = text.Trim().ToLowerInvariant();
+        return t switch
+        {
+            "1" or "true" or "on" or "yes" or "detected" or "rain" => true,
+            "0" or "false" or "off" or "no" or "clear" or "none" => false,
+            _ => null
+        };
     }
 
     /// <summary>Wyciąga surowy IEEE z typowych pól Zigbee2MQTT (w tym <c>device</c> przy include_device_information).</summary>

@@ -36,4 +36,32 @@ public sealed class JsonMqttPayloadParserTests
 
         Assert.Equal("0x00158d0001a2b3c4", r.IeeeAddress);
     }
+
+    [Fact]
+    public void ParseSensorPayload_ShouldReadWeatherFields_ForRainSensor()
+    {
+        const string json = """
+            {
+              "rain": true,
+              "rain_intensity": 17,
+              "battery": 92,
+              "illuminance_raw": 545,
+              "illuminance_average_20min": 430,
+              "illuminance_maximum_today": 1120,
+              "cleaning_reminder": "ON",
+              "linkquality": 180
+            }
+            """;
+
+        var r = _sut.ParseSensorPayload(json);
+
+        Assert.True(r.Rain);
+        Assert.Equal(17m, r.RainIntensityRaw);
+        Assert.Equal(545m, r.IlluminanceRaw);
+        Assert.Equal(430m, r.IlluminanceAverage20MinRaw);
+        Assert.Equal(1120m, r.IlluminanceMaximumTodayRaw);
+        Assert.True(r.CleaningReminder);
+        Assert.Equal(92, r.Battery);
+        Assert.Equal(180, r.LinkQuality);
+    }
 }

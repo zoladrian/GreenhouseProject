@@ -20,6 +20,32 @@ const tooltipFmt = new Intl.DateTimeFormat('pl-PL', {
   second: '2-digit',
 });
 
+const axisShortTimeFmt = new Intl.DateTimeFormat('pl-PL', {
+  timeZone: CHART_TIME_ZONE,
+  hour: '2-digit',
+  minute: '2-digit',
+});
+
+const axisDayTimeFmt = new Intl.DateTimeFormat('pl-PL', {
+  timeZone: CHART_TIME_ZONE,
+  day: '2-digit',
+  month: '2-digit',
+  hour: '2-digit',
+  minute: '2-digit',
+});
+
+const axisDayFmt = new Intl.DateTimeFormat('pl-PL', {
+  timeZone: CHART_TIME_ZONE,
+  day: '2-digit',
+  month: '2-digit',
+});
+
+const axisMonthFmt = new Intl.DateTimeFormat('pl-PL', {
+  timeZone: CHART_TIME_ZONE,
+  month: '2-digit',
+  year: 'numeric',
+});
+
 /**
  * API zwraca czas w UTC; jeśli brak „Z”/offsetu w ISO, dopisujemy Z (zgodnie z konwerterem JSON po stronie serwera).
  */
@@ -36,16 +62,47 @@ export function formatPlAxisTime(value: number | string): string {
   return axisFmt.format(n);
 }
 
+export function inferRangeMs(timesMs: number[]): number | null {
+  if (!timesMs.length) return null;
+  const sorted = [...timesMs].sort((a, b) => a - b);
+  return Math.max(0, sorted[sorted.length - 1] - sorted[0]);
+}
+
+function formatAdaptiveAxisTime(value: number, rangeMs: number | null): string {
+  if (rangeMs == null) return formatPlAxisTime(value);
+  if (rangeMs <= 6 * 3600_000) return axisShortTimeFmt.format(value);
+  if (rangeMs <= 48 * 3600_000) return axisDayTimeFmt.format(value);
+  if (rangeMs <= 45 * 24 * 3600_000) return axisDayFmt.format(value);
+  return axisMonthFmt.format(value);
+}
+
 export function formatPlTooltipTime(value: number | string): string {
   const n = typeof value === 'number' ? value : Date.parse(value);
   if (Number.isNaN(n)) return '';
   return tooltipFmt.format(n);
 }
 
-export function echartsTimeXAxisPl() {
+export function echartsTimeXAxisPl(rangeMs?: number | null) {
+  const r = rangeMs ?? null;
+  const minInterval =
+    r == null
+      ? undefined
+      : r <= 6 * 3600_000
+        ? 15 * 60_000
+        : r <= 48 * 3600_000
+          ? 60 * 60_000
+          : r <= 10 * 24 * 3600_000
+            ? 6 * 60 * 60_000
+            : 24 * 60 * 60_000;
   return {
     type: 'time' as const,
-    axisLabel: { formatter: formatPlAxisTime },
+    minInterval,
+    axisLabel: {
+      formatter: (v: number) => formatAdaptiveAxisTime(v, r),
+      hideOverlap: true,
+      interval: 'auto' as const,
+      rotate: r != null && r > 48 * 3600_000 ? 30 : 0,
+    },
   };
 }
 

@@ -6,4 +6,10 @@ public sealed record ParsedSensorPayload(
     decimal? Temperature,
     int? Battery,
     int? LinkQuality,
-    string? IeeeAddress = null);
+    string? IeeeAddress = null,
+    bool? Rain = null,
+    decimal? RainIntensityRaw = null,
+    decimal? IlluminanceRaw = null,
+    decimal? IlluminanceAverage20MinRaw = null,
+    decimal? IlluminanceMaximumTodayRaw = null,
+    bool? CleaningReminder = null);

@@ -18,7 +18,7 @@ export function uniqueSeriesKeys(points: MoisturePoint[]): string[] {
 /** Etykieta legendy: nazwa z panelu czujników albo ostatni znany identyfikator z MQTT. */
 export function resolveSeriesLegendName(
   seriesKey: string,
-  seriesPoints: MoisturePoint[],
+  seriesPoints: Array<{ sensorIdentifier: string }>,
   sensorLegendById?: Record<string, string>,
 ): string {
   if (seriesKey.startsWith('topic:')) {

@@ -7,6 +7,7 @@ using Greenhouse.Application.Nawy;
 using Greenhouse.Application.Readings;
 using Greenhouse.Application.Sensors;
 using Greenhouse.Application.Voice;
+using Greenhouse.Application.Weather;
 using Greenhouse.Infrastructure;
 using Greenhouse.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -23,6 +24,7 @@ builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddHostedService<SensorDuplicateCleanupHostedService>();
 builder.Services.Configure<VoiceOptions>(builder.Configuration.GetSection(VoiceOptions.SectionName));
+builder.Services.Configure<WeatherInterpretationOptions>(builder.Configuration.GetSection(WeatherInterpretationOptions.SectionName));
 
 var mqttOpts = new MqttOptions();
 builder.Configuration.GetSection(MqttOptions.SectionName).Bind(mqttOpts);
@@ -176,6 +178,16 @@ app.MapGet("/api/sensor/health", async (GetSensorHealthQueryService query, Cance
 app.MapGet("/api/chart/moisture", async (
     Guid? nawaId, Guid? sensorId, DateTime? from, DateTime? to,
     GetMoistureSeriesQueryService query, CancellationToken ct) =>
+{
+    var fromUtc = from ?? DateTime.UtcNow.AddHours(-24);
+    var toUtc = to ?? DateTime.UtcNow;
+    var data = await query.ExecuteAsync(nawaId, sensorId, fromUtc, toUtc, ct);
+    return Results.Ok(data);
+});
+
+app.MapGet("/api/chart/weather", async (
+    Guid? nawaId, Guid? sensorId, DateTime? from, DateTime? to,
+    GetWeatherSeriesQueryService query, CancellationToken ct) =>
 {
     var fromUtc = from ?? DateTime.UtcNow.AddHours(-24);
     var toUtc = to ?? DateTime.UtcNow;

@@ -101,6 +101,46 @@ public sealed class MqttMessageIngestionServiceTests
         Assert.Empty(repository.Items);
     }
 
+    [Fact]
+    public async Task IngestAsync_ShouldPersistWeatherMetrics_ForRainSensorPayload()
+    {
+        var parser = new FakeParser(new ParsedSensorPayload(
+            SoilMoisture: null,
+            Temperature: null,
+            Battery: 87,
+            LinkQuality: 190,
+            IeeeAddress: "0x00158d0001a2b3c4",
+            Rain: true,
+            RainIntensityRaw: 11m,
+            IlluminanceRaw: 470m,
+            IlluminanceAverage20MinRaw: 390m,
+            IlluminanceMaximumTodayRaw: 980m,
+            CleaningReminder: false));
+        var repository = new InMemoryReadingRepository();
+        var provisioning = new FixedProvisioning(Guid.Parse("55555555-5555-5555-5555-555555555555"));
+        var sut = new MqttMessageIngestionService(
+            parser,
+            repository,
+            provisioning,
+            Microsoft.Extensions.Logging.Abstractions.NullLogger<MqttMessageIngestionService>.Instance,
+            new MqttIngestTelemetry());
+
+        var message = new IncomingMqttMessage(
+            "zigbee2mqtt/Deszcz_1",
+            "{\"rain\":true,\"rain_intensity\":11,\"battery\":87}",
+            DateTime.UtcNow);
+
+        await sut.IngestAsync(message, CancellationToken.None);
+
+        var reading = Assert.Single(repository.Items);
+        Assert.True(reading.Rain);
+        Assert.Equal(11m, reading.RainIntensityRaw);
+        Assert.Equal(470m, reading.IlluminanceRaw);
+        Assert.Equal(390m, reading.IlluminanceAverage20MinRaw);
+        Assert.Equal(980m, reading.IlluminanceMaximumTodayRaw);
+        Assert.False(reading.CleaningReminder);
+    }
+
     private sealed class FakeParser : IMqttPayloadParser
     {
         private readonly ParsedSensorPayload _result;

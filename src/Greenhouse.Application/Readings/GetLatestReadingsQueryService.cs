@@ -26,7 +26,13 @@ public sealed class GetLatestReadingsQueryService
                 r.SoilMoisture,
                 r.Temperature,
                 r.Battery,
-                r.LinkQuality))
+                r.LinkQuality,
+                r.Rain,
+                r.RainIntensityRaw,
+                r.IlluminanceRaw,
+                r.IlluminanceAverage20MinRaw,
+                r.IlluminanceMaximumTodayRaw,
+                r.CleaningReminder))
             .ToList();
     }
 }
