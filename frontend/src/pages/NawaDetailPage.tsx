@@ -21,6 +21,9 @@ const PRESET_HOURS: Record<Exclude<RangePreset, 'custom'>, number> = {
   '30d': 720,
 };
 
+const RAIN_METRICS: WeatherMetricKey[] = ['rain', 'rainIntensityRaw'];
+const LIGHT_METRICS: WeatherMetricKey[] = ['illuminanceRaw', 'illuminanceAverage20MinRaw', 'illuminanceMaximumTodayRaw'];
+
 function toDatetimeLocalValue(d: Date) {
   const pad = (n: number) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
@@ -37,11 +40,6 @@ export function NawaDetailPage() {
   const [rangePreset, setRangePreset] = useState<RangePreset>('24h');
   const [customFrom, setCustomFrom] = useState('');
   const [customTo, setCustomTo] = useState('');
-  const [weatherMetrics, setWeatherMetrics] = useState<WeatherMetricKey[]>([
-    'rain',
-    'rainIntensityRaw',
-    'illuminanceRaw',
-  ]);
 
   const { from, to } = useMemo(() => {
     const now = Date.now();
@@ -487,52 +485,22 @@ export function NawaDetailPage() {
             </strong>.
           </p>
         )}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
-          {(
-            [
-              ['rain', 'Wykrycie opadu'],
-              ['rainIntensityRaw', 'Intensywność opadu (surowa)'],
-              ['illuminanceRaw', 'Jasność surowa'],
-              ['illuminanceAverage20MinRaw', 'Jasność średnia 20 min'],
-              ['illuminanceMaximumTodayRaw', 'Maks. jasność dziś'],
-            ] as Array<[WeatherMetricKey, string]>
-          ).map(([key, label]) => {
-            const checked = weatherMetrics.includes(key);
-            return (
-              <label
-                key={key}
-                style={{
-                  display: 'inline-flex',
-                  gap: 6,
-                  alignItems: 'center',
-                  background: checked ? '#dcfce7' : '#f8fafc',
-                  border: checked ? '1px solid #86efac' : '1px solid #e2e8f0',
-                  borderRadius: 999,
-                  padding: '4px 10px',
-                  fontSize: 12,
-                }}
-              >
-                <input
-                  type="checkbox"
-                  checked={checked}
-                  onChange={(e) => {
-                    setWeatherMetrics((prev) => {
-                      if (e.target.checked) return [...prev, key];
-                      return prev.filter((x) => x !== key);
-                    });
-                  }}
-                />
-                {label}
-              </label>
-            );
-          })}
-        </div>
         <WeatherChart
           points={weatherPoints ?? []}
-          selectedMetrics={weatherMetrics}
+          selectedMetrics={RAIN_METRICS}
           sensorLegendById={sensorLegendById}
           rangeMs={selectedRangeMs}
           timeBounds={selectedTimeBounds}
+          title="Opad (RB-SRAIN01)"
+        />
+        <div style={{ height: 12 }} />
+        <WeatherChart
+          points={weatherPoints ?? []}
+          selectedMetrics={LIGHT_METRICS}
+          sensorLegendById={sensorLegendById}
+          rangeMs={selectedRangeMs}
+          timeBounds={selectedTimeBounds}
+          title="Nasłonecznienie (RB-SRAIN01)"
         />
       </div>
 

@@ -25,6 +25,7 @@ export function WeatherChart({
   sensorLegendById,
   rangeMs: rangeMsOverride,
   timeBounds,
+  title = 'Pogoda',
 }: {
   points: WeatherPoint[];
   selectedMetrics: WeatherMetricKey[];
@@ -33,6 +34,7 @@ export function WeatherChart({
   rangeMs?: number | null;
   /** Twarde granice osi czasu z filtra (od-do). */
   timeBounds?: { minMs: number; maxMs: number } | null;
+  title?: string;
 }) {
   // Hooki przed wczesnym returnem — kolejność wywołań musi być stała.
   const keys = useMemo(
@@ -93,19 +95,18 @@ export function WeatherChart({
 
   const option = useMemo(
     () => ({
-      title: { text: 'Pogoda (RB-SRAIN01)', left: 'center', textStyle: { fontSize: 14 } },
+      title: { text: title, left: 'center', textStyle: { fontSize: 14 } },
       tooltip: echartsAxisTooltipPl(),
       legend: { bottom: 0, textStyle: { fontSize: 11 } },
       xAxis: echartsTimeXAxisPl(rangeMs, timeBounds),
-      yAxis: [
-        { type: 'value' as const, name: 'Wartość surowa' },
-        { type: 'value' as const, name: 'Opad', min: 0, max: 1, interval: 1 },
-      ],
+      yAxis: selectedMetrics.includes('rain')
+        ? ([{ type: 'value' as const, name: 'Wartość surowa' }, { type: 'value' as const, name: 'Opad', min: 0, max: 1, interval: 1 }] as const)
+        : ({ type: 'value' as const, name: 'Wartość surowa' } as const),
       grid: { left: 52, right: 52, top: 40, bottom: Math.max(56, chartGridBottomPl(rangeMs)) },
       animation: !(rangeMs && rangeMs > 24 * 3600_000),
       series,
     }),
-    [rangeMs, series, timeBounds],
+    [rangeMs, series, selectedMetrics, timeBounds, title],
   );
 
   if (points.length === 0 || selectedMetrics.length === 0) {
