@@ -9,7 +9,7 @@ public sealed class NawaChartSensorScopeTests
     private static readonly Guid Nawa2 = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
 
     [Fact]
-    public void MoistureEnvironment_IncludesSoilOnNawa_AndGlobalWeatherWithoutNawa()
+    public void MoistureEnvironment_IncludesOnlyNonWeatherSensorsAssignedToNawa()
     {
         var soilOnNawa1 = Sensor.Register("soil-1", SensorKind.Soil);
         soilOnNawa1.AssignToNawa(Nawa1);
@@ -22,9 +22,9 @@ public sealed class NawaChartSensorScopeTests
         var ids = sut.ResolveMoistureEnvironmentAndGlobalWeatherSensorIds(Nawa1);
 
         Assert.Contains(soilOnNawa1.Id, ids);
-        Assert.Contains(rainGlobal.Id, ids);
+        Assert.DoesNotContain(rainGlobal.Id, ids);
         Assert.DoesNotContain(soilOnNawa2.Id, ids);
-        Assert.Equal(2, ids.Count);
+        Assert.Single(ids);
     }
 
     [Fact]

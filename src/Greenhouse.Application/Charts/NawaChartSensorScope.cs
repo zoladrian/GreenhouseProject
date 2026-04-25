@@ -4,8 +4,9 @@ namespace Greenhouse.Application.Charts;
 
 /// <summary>
 /// Określa, które czujniki wchodzą w skład serii prezentowanych na wykresach nawy.
-/// Gleba i metryki środowiskowe (temperatura, bateria) pochodzą z czujników przypisanych do nawy,
-/// z wyłączeniem czujników pogodowych — te są zawsze globalne (<see cref="Sensor.NawaId"/> = <c>null</c>).
+/// Gleba i metryki środowiskowe (temperatura, bateria) pochodzą wyłącznie z czujników przypisanych do nawy,
+/// z wyłączeniem czujników pogodowych — te są zawsze globalne (<see cref="Sensor.NawaId"/> = <c>null</c>)
+/// i trafiają tylko do serii pogodowych.
 /// </summary>
 public sealed class NawaChartSensorScope
 {
@@ -19,18 +20,15 @@ public sealed class NawaChartSensorScope
 
     /// <summary>
     /// Identyfikatory do serii wilgotności / temperatury / baterii na karcie nawy:
-    /// wszystkie czujniki przypisane do nawy poza <see cref="SensorKind.Weather"/> oraz
-    /// wszystkie <b>globalne</b> czujniki pogodowe (deszcz, jasność) bez przypisania do nawy.
+    /// wyłącznie czujniki przypisane do tej nawy, bez <see cref="SensorKind.Weather"/>.
     /// </summary>
     public IReadOnlyList<Guid> ResolveMoistureEnvironmentAndGlobalWeatherSensorIds(Guid nawaId)
     {
-        var local = _sensors
+        return _sensors
             .Where(s => s.NawaId == nawaId && s.Kind != SensorKind.Weather)
-            .Select(s => s.Id);
-        var globalWeather = _sensors
-            .Where(s => s.Kind == SensorKind.Weather && s.NawaId is null)
-            .Select(s => s.Id);
-        return local.Concat(globalWeather).Distinct().ToList();
+            .Select(s => s.Id)
+            .Distinct()
+            .ToList();
     }
 
     /// <summary>

@@ -61,6 +61,12 @@ export function NawaDetailPage() {
     if (Number.isNaN(fromMs) || Number.isNaN(toMs) || toMs <= fromMs) return null;
     return toMs - fromMs;
   }, [from, to]);
+  const selectedTimeBounds = useMemo(() => {
+    const minMs = Date.parse(from);
+    const maxMs = Date.parse(to);
+    if (Number.isNaN(minMs) || Number.isNaN(maxMs) || maxMs <= minMs) return null;
+    return { minMs, maxMs };
+  }, [from, to]);
 
   const { data: points, error: pointsError, refetch: refetchPoints } = useFetch(
     (signal) => api.getMoistureSeries(`nawaId=${id}&from=${from}&to=${to}`, signal),
@@ -439,6 +445,7 @@ export function NawaDetailPage() {
           points={points ?? []}
           sensorLegendById={sensorLegendById}
           rangeMs={selectedRangeMs}
+          timeBounds={selectedTimeBounds}
           wateringEvents={wateringEvents ?? []}
           title="Wilgotność gleby"
           moistureMin={mMinNum}
@@ -450,12 +457,18 @@ export function NawaDetailPage() {
           points={points ?? []}
           sensorLegendById={sensorLegendById}
           rangeMs={selectedRangeMs}
+          timeBounds={selectedTimeBounds}
           temperatureMin={tMinNum}
           temperatureMax={tMaxNum}
         />
       </div>
       <div className="nawa-glass nawa-chart-shell">
-        <BatteryChart points={points ?? []} sensorLegendById={sensorLegendById} rangeMs={selectedRangeMs} />
+        <BatteryChart
+          points={points ?? []}
+          sensorLegendById={sensorLegendById}
+          rangeMs={selectedRangeMs}
+          timeBounds={selectedTimeBounds}
+        />
       </div>
       <div className="nawa-glass nawa-chart-shell">
         <h3 style={{ fontSize: 14, marginBottom: 10 }}>Serie pogodowe</h3>
@@ -482,7 +495,6 @@ export function NawaDetailPage() {
               ['illuminanceRaw', 'Jasność surowa'],
               ['illuminanceAverage20MinRaw', 'Jasność średnia 20 min'],
               ['illuminanceMaximumTodayRaw', 'Maks. jasność dziś'],
-              ['battery', 'Bateria'],
             ] as Array<[WeatherMetricKey, string]>
           ).map(([key, label]) => {
             const checked = weatherMetrics.includes(key);
@@ -520,6 +532,7 @@ export function NawaDetailPage() {
           selectedMetrics={weatherMetrics}
           sensorLegendById={sensorLegendById}
           rangeMs={selectedRangeMs}
+          timeBounds={selectedTimeBounds}
         />
       </div>
 

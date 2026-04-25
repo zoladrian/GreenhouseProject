@@ -9,6 +9,8 @@ interface Props {
   sensorLegendById?: Record<string, string>;
   /** Opcjonalny zakres osi czasu (ms) wyliczony z filtra widoku; nadpisuje inferencję z punktów. */
   rangeMs?: number | null;
+  /** Twarde granice osi czasu z filtra (od-do). */
+  timeBounds?: { minMs: number; maxMs: number } | null;
   temperatureMin?: number | null;
   temperatureMax?: number | null;
 }
@@ -17,6 +19,7 @@ export function TemperatureChart({
   points,
   sensorLegendById,
   rangeMs: rangeMsOverride,
+  timeBounds,
   temperatureMin,
   temperatureMax,
 }: Props) {
@@ -78,13 +81,13 @@ export function TemperatureChart({
       title: { text: 'Temperatura', left: 'center', textStyle: { fontSize: 14 } },
       tooltip: echartsAxisTooltipPl(),
       legend: { bottom: 0, textStyle: { fontSize: 11 } },
-      xAxis: echartsTimeXAxisPl(rangeMs),
+      xAxis: echartsTimeXAxisPl(rangeMs, timeBounds),
       yAxis: { type: 'value' as const, name: '°C' },
       grid: { left: 50, right: 16, top: 40, bottom: chartGridBottomPl(rangeMs) },
       animation: !(rangeMs && rangeMs > 24 * 3600_000),
       series,
     }),
-    [rangeMs, series],
+    [rangeMs, series, timeBounds],
   );
 
   if (points.length === 0) {

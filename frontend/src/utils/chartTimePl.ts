@@ -89,7 +89,7 @@ export function formatPlTooltipTime(value: number | string): string {
   return tooltipFmt.format(n);
 }
 
-export function echartsTimeXAxisPl(rangeMs?: number | null) {
+export function echartsTimeXAxisPl(rangeMs?: number | null, bounds?: { minMs: number; maxMs: number } | null) {
   const r = rangeMs ?? null;
   const minInterval =
     r == null
@@ -106,6 +106,8 @@ export function echartsTimeXAxisPl(rangeMs?: number | null) {
   const longRange = r != null && r > 48 * 3600_000;
   return {
     type: 'time' as const,
+    min: bounds?.minMs,
+    max: bounds?.maxMs,
     minInterval,
     axisLabel: {
       formatter: (v: number) => formatAdaptiveAxisTime(v, r),

@@ -33,6 +33,18 @@ describe('chartSeries', () => {
     expect(name).toBe('Monstera');
   });
 
+  it('hides raw UUID sensor identifier in legend', () => {
+    const name = resolveSeriesLegendName('7b7c2a0a-5712-4542-9060-0f779939f63f', [
+      { sensorIdentifier: '7b7c2a0a-5712-4542-9060-0f779939f63f' },
+    ]);
+    expect(name).toMatch(/^Czujnik /);
+  });
+
+  it('hides raw 0x zigbee identifier in legend', () => {
+    const name = resolveSeriesLegendName('topic:0xa4c13899e6af2611', [{ sensorIdentifier: '0xa4c13899e6af2611' }]);
+    expect(name).toMatch(/^Czujnik /);
+  });
+
   it('uniqueSeriesKeys should deduplicate', () => {
     const points = [
       { utcTime: '', sensorIdentifier: 'a', sensorId: '1', soilMoisture: 1, temperature: null, battery: null, linkQuality: null },

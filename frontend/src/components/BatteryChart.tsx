@@ -8,11 +8,14 @@ export function BatteryChart({
   points,
   sensorLegendById,
   rangeMs: rangeMsOverride,
+  timeBounds,
 }: {
   points: MoisturePoint[];
   sensorLegendById?: Record<string, string>;
   /** Opcjonalny zakres osi czasu (ms) wyliczony z filtra widoku; nadpisuje inferencję z punktów. */
   rangeMs?: number | null;
+  /** Twarde granice osi czasu z filtra (od-do). */
+  timeBounds?: { minMs: number; maxMs: number } | null;
 }) {
   // Hooki przed wczesnym returnem — kolejność wywołań musi być stała.
   const seriesKeys = useMemo(() => uniqueSeriesKeys(points), [points]);
@@ -48,13 +51,13 @@ export function BatteryChart({
       title: { text: 'Bateria', left: 'center', textStyle: { fontSize: 14 } },
       tooltip: echartsAxisTooltipPl(),
       legend: { bottom: 0, textStyle: { fontSize: 11 } },
-      xAxis: echartsTimeXAxisPl(rangeMs),
+      xAxis: echartsTimeXAxisPl(rangeMs, timeBounds),
       yAxis: { type: 'value' as const, name: '%', min: 0, max: 100 },
       grid: { left: 50, right: 16, top: 40, bottom: chartGridBottomPl(rangeMs) },
       animation: !(rangeMs && rangeMs > 24 * 3600_000),
       series,
     }),
-    [rangeMs, series],
+    [rangeMs, series, timeBounds],
   );
 
   if (points.length === 0) return null;

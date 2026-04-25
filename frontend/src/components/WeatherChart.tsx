@@ -9,8 +9,7 @@ export type WeatherMetricKey =
   | 'rainIntensityRaw'
   | 'illuminanceRaw'
   | 'illuminanceAverage20MinRaw'
-  | 'illuminanceMaximumTodayRaw'
-  | 'battery';
+  | 'illuminanceMaximumTodayRaw';
 
 const metricLabel: Record<WeatherMetricKey, string> = {
   rain: 'Wykrycie opadu',
@@ -18,7 +17,6 @@ const metricLabel: Record<WeatherMetricKey, string> = {
   illuminanceRaw: 'Jasność surowa',
   illuminanceAverage20MinRaw: 'Jasność średnia 20 min',
   illuminanceMaximumTodayRaw: 'Maks. jasność dziś',
-  battery: 'Bateria',
 };
 
 export function WeatherChart({
@@ -26,12 +24,15 @@ export function WeatherChart({
   selectedMetrics,
   sensorLegendById,
   rangeMs: rangeMsOverride,
+  timeBounds,
 }: {
   points: WeatherPoint[];
   selectedMetrics: WeatherMetricKey[];
   sensorLegendById?: Record<string, string>;
   /** Opcjonalny zakres osi czasu (ms) wyliczony z filtra widoku; nadpisuje inferencję z punktów. */
   rangeMs?: number | null;
+  /** Twarde granice osi czasu z filtra (od-do). */
+  timeBounds?: { minMs: number; maxMs: number } | null;
 }) {
   // Hooki przed wczesnym returnem — kolejność wywołań musi być stała.
   const keys = useMemo(
@@ -95,7 +96,7 @@ export function WeatherChart({
       title: { text: 'Pogoda (RB-SRAIN01)', left: 'center', textStyle: { fontSize: 14 } },
       tooltip: echartsAxisTooltipPl(),
       legend: { bottom: 0, textStyle: { fontSize: 11 } },
-      xAxis: echartsTimeXAxisPl(rangeMs),
+      xAxis: echartsTimeXAxisPl(rangeMs, timeBounds),
       yAxis: [
         { type: 'value' as const, name: 'Wartość surowa' },
         { type: 'value' as const, name: 'Opad', min: 0, max: 1, interval: 1 },
@@ -104,7 +105,7 @@ export function WeatherChart({
       animation: !(rangeMs && rangeMs > 24 * 3600_000),
       series,
     }),
-    [rangeMs, series],
+    [rangeMs, series, timeBounds],
   );
 
   if (points.length === 0 || selectedMetrics.length === 0) {

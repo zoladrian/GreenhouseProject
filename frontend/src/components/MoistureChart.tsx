@@ -10,6 +10,8 @@ interface Props {
   sensorLegendById?: Record<string, string>;
   /** Opcjonalny zakres osi czasu (ms) wyliczony z filtra widoku; nadpisuje inferencję z punktów. */
   rangeMs?: number | null;
+  /** Twarde granice osi czasu z filtra (od-do). */
+  timeBounds?: { minMs: number; maxMs: number } | null;
   wateringEvents?: WateringEventDto[];
   title?: string;
   /** Poniżej — strefa „podlej”; na wykresie jako linia pomarańczowa. */
@@ -33,6 +35,7 @@ export function MoistureChart({
   points,
   sensorLegendById,
   rangeMs: rangeMsOverride,
+  timeBounds,
   wateringEvents = [],
   title,
   moistureMin,
@@ -118,13 +121,13 @@ export function MoistureChart({
       title: title ? { text: title, left: 'center', textStyle: { fontSize: 14 } } : undefined,
       tooltip: echartsAxisTooltipPl(),
       legend: { bottom: 0, textStyle: { fontSize: 11 } },
-      xAxis: echartsTimeXAxisPl(rangeMs),
+      xAxis: echartsTimeXAxisPl(rangeMs, timeBounds),
       yAxis: { type: 'value' as const, name: 'Wilgotność (%)' },
       grid: { left: 50, right: 16, top: title ? 40 : 16, bottom: chartGridBottomPl(rangeMs) },
       animation: !(rangeMs && rangeMs > 24 * 3600_000),
       series,
     }),
-    [title, rangeMs, series],
+    [title, rangeMs, series, timeBounds],
   );
 
   if (points.length === 0) {
