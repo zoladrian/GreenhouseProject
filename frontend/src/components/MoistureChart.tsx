@@ -8,6 +8,8 @@ interface Props {
   points: MoisturePoint[];
   /** Mapa sensorId → etykieta (np. displayName z nawy); scala serie po zmianie nazwy w Z2M. */
   sensorLegendById?: Record<string, string>;
+  /** Opcjonalny zakres osi czasu (ms) wyliczony z filtra widoku; nadpisuje inferencję z punktów. */
+  rangeMs?: number | null;
   wateringEvents?: WateringEventDto[];
   title?: string;
   /** Poniżej — strefa „podlej”; na wykresie jako linia pomarańczowa. */
@@ -27,7 +29,15 @@ function kindVisual(kind: WateringInferredKind | string | undefined) {
   }
 }
 
-export function MoistureChart({ points, sensorLegendById, wateringEvents = [], title, moistureMin, moistureMax }: Props) {
+export function MoistureChart({
+  points,
+  sensorLegendById,
+  rangeMs: rangeMsOverride,
+  wateringEvents = [],
+  title,
+  moistureMin,
+  moistureMax,
+}: Props) {
   // Wszystkie hooki MUSZĄ być wywołane przed jakimkolwiek warunkowym `return` —
   // inaczej React naliczy różne liczby hooków między renderami i wybuchnie (#310).
   const seriesKeys = useMemo(() => uniqueSeriesKeys(points), [points]);
@@ -98,10 +108,10 @@ export function MoistureChart({ points, sensorLegendById, wateringEvents = [], t
     [seriesKeys, points, thresholdLines, wateringVertLines, sensorLegendById],
   );
 
-  const rangeMs = useMemo(
-    () => inferRangeMs(points.map((p) => utcIsoToMs(p.utcTime)).filter((n) => !Number.isNaN(n))),
-    [points],
-  );
+  const rangeMs = useMemo(() => {
+    if (rangeMsOverride != null && rangeMsOverride >= 0) return rangeMsOverride;
+    return inferRangeMs(points.map((p) => utcIsoToMs(p.utcTime)).filter((n) => !Number.isNaN(n)));
+  }, [points, rangeMsOverride]);
 
   const option = useMemo(
     () => ({

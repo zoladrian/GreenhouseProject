@@ -7,9 +7,12 @@ import { chartGridBottomPl, echartsAxisTooltipPl, echartsTimeXAxisPl, inferRange
 export function BatteryChart({
   points,
   sensorLegendById,
+  rangeMs: rangeMsOverride,
 }: {
   points: MoisturePoint[];
   sensorLegendById?: Record<string, string>;
+  /** Opcjonalny zakres osi czasu (ms) wyliczony z filtra widoku; nadpisuje inferencję z punktów. */
+  rangeMs?: number | null;
 }) {
   // Hooki przed wczesnym returnem — kolejność wywołań musi być stała.
   const seriesKeys = useMemo(() => uniqueSeriesKeys(points), [points]);
@@ -35,10 +38,10 @@ export function BatteryChart({
     [seriesKeys, points, sensorLegendById],
   );
 
-  const rangeMs = useMemo(
-    () => inferRangeMs(points.map((p) => utcIsoToMs(p.utcTime)).filter((n) => !Number.isNaN(n))),
-    [points],
-  );
+  const rangeMs = useMemo(() => {
+    if (rangeMsOverride != null && rangeMsOverride >= 0) return rangeMsOverride;
+    return inferRangeMs(points.map((p) => utcIsoToMs(p.utcTime)).filter((n) => !Number.isNaN(n)));
+  }, [points, rangeMsOverride]);
 
   const option = useMemo(
     () => ({

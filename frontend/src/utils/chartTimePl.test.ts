@@ -25,4 +25,12 @@ describe('chartTimePl', () => {
     expect(axis.minInterval).toBe(2 * 24 * 60 * 60 * 1000);
     expect(axis.axisLabel?.rotate).toBe(40);
   });
+
+  it('echartsTimeXAxisPl should hide hours for ranges above 48h', () => {
+    const axis = echartsTimeXAxisPl(49 * 3600_000) as {
+      axisLabel?: { formatter?: (v: number) => string };
+    };
+    const label = axis.axisLabel?.formatter?.(Date.parse('2026-04-25T11:30:00Z')) ?? '';
+    expect(label).not.toContain(':');
+  });
 });

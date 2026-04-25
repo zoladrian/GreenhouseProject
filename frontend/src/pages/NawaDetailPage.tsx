@@ -55,6 +55,12 @@ export function NawaDetailPage() {
     const h = rangePreset === 'custom' ? 24 : PRESET_HOURS[rangePreset as Exclude<RangePreset, 'custom'>] ?? 24;
     return { from: new Date(now - h * 3600_000).toISOString(), to: new Date(now).toISOString() };
   }, [rangePreset, customFrom, customTo]);
+  const selectedRangeMs = useMemo(() => {
+    const fromMs = Date.parse(from);
+    const toMs = Date.parse(to);
+    if (Number.isNaN(fromMs) || Number.isNaN(toMs) || toMs <= fromMs) return null;
+    return toMs - fromMs;
+  }, [from, to]);
 
   const { data: points, error: pointsError, refetch: refetchPoints } = useFetch(
     (signal) => api.getMoistureSeries(`nawaId=${id}&from=${from}&to=${to}`, signal),
@@ -432,6 +438,7 @@ export function NawaDetailPage() {
         <MoistureChart
           points={points ?? []}
           sensorLegendById={sensorLegendById}
+          rangeMs={selectedRangeMs}
           wateringEvents={wateringEvents ?? []}
           title="Wilgotność gleby"
           moistureMin={mMinNum}
@@ -442,12 +449,13 @@ export function NawaDetailPage() {
         <TemperatureChart
           points={points ?? []}
           sensorLegendById={sensorLegendById}
+          rangeMs={selectedRangeMs}
           temperatureMin={tMinNum}
           temperatureMax={tMaxNum}
         />
       </div>
       <div className="nawa-glass nawa-chart-shell">
-        <BatteryChart points={points ?? []} sensorLegendById={sensorLegendById} />
+        <BatteryChart points={points ?? []} sensorLegendById={sensorLegendById} rangeMs={selectedRangeMs} />
       </div>
       <div className="nawa-glass nawa-chart-shell">
         <h3 style={{ fontSize: 14, marginBottom: 10 }}>Serie pogodowe</h3>
@@ -507,7 +515,12 @@ export function NawaDetailPage() {
             );
           })}
         </div>
-        <WeatherChart points={weatherPoints ?? []} selectedMetrics={weatherMetrics} sensorLegendById={sensorLegendById} />
+        <WeatherChart
+          points={weatherPoints ?? []}
+          selectedMetrics={weatherMetrics}
+          sensorLegendById={sensorLegendById}
+          rangeMs={selectedRangeMs}
+        />
       </div>
 
       {dryingRates && dryingRates.length > 0 && (

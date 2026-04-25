@@ -25,10 +25,13 @@ export function WeatherChart({
   points,
   selectedMetrics,
   sensorLegendById,
+  rangeMs: rangeMsOverride,
 }: {
   points: WeatherPoint[];
   selectedMetrics: WeatherMetricKey[];
   sensorLegendById?: Record<string, string>;
+  /** Opcjonalny zakres osi czasu (ms) wyliczony z filtra widoku; nadpisuje inferencję z punktów. */
+  rangeMs?: number | null;
 }) {
   // Hooki przed wczesnym returnem — kolejność wywołań musi być stała.
   const keys = useMemo(
@@ -82,10 +85,10 @@ export function WeatherChart({
     return s;
   }, [keys, points, selectedMetrics, sensorLegendById]);
 
-  const rangeMs = useMemo(
-    () => inferRangeMs(points.map((p) => utcIsoToMs(p.utcTime)).filter((n) => !Number.isNaN(n))),
-    [points],
-  );
+  const rangeMs = useMemo(() => {
+    if (rangeMsOverride != null && rangeMsOverride >= 0) return rangeMsOverride;
+    return inferRangeMs(points.map((p) => utcIsoToMs(p.utcTime)).filter((n) => !Number.isNaN(n)));
+  }, [points, rangeMsOverride]);
 
   const option = useMemo(
     () => ({

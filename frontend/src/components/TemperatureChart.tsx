@@ -7,11 +7,19 @@ import { chartGridBottomPl, echartsAxisTooltipPl, echartsTimeXAxisPl, inferRange
 interface Props {
   points: MoisturePoint[];
   sensorLegendById?: Record<string, string>;
+  /** Opcjonalny zakres osi czasu (ms) wyliczony z filtra widoku; nadpisuje inferencję z punktów. */
+  rangeMs?: number | null;
   temperatureMin?: number | null;
   temperatureMax?: number | null;
 }
 
-export function TemperatureChart({ points, sensorLegendById, temperatureMin, temperatureMax }: Props) {
+export function TemperatureChart({
+  points,
+  sensorLegendById,
+  rangeMs: rangeMsOverride,
+  temperatureMin,
+  temperatureMax,
+}: Props) {
   // Hooki muszą iść przed wczesnym returnem; inaczej React #310 przy zmianie liczby renderów.
   const seriesKeys = useMemo(() => uniqueSeriesKeys(points), [points]);
 
@@ -60,10 +68,10 @@ export function TemperatureChart({ points, sensorLegendById, temperatureMin, tem
     [seriesKeys, points, thresholdLines, sensorLegendById],
   );
 
-  const rangeMs = useMemo(
-    () => inferRangeMs(points.map((p) => utcIsoToMs(p.utcTime)).filter((n) => !Number.isNaN(n))),
-    [points],
-  );
+  const rangeMs = useMemo(() => {
+    if (rangeMsOverride != null && rangeMsOverride >= 0) return rangeMsOverride;
+    return inferRangeMs(points.map((p) => utcIsoToMs(p.utcTime)).filter((n) => !Number.isNaN(n)));
+  }, [points, rangeMsOverride]);
 
   const option = useMemo(
     () => ({
