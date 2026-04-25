@@ -36,6 +36,7 @@ export function NawaDetailPage() {
     (signal) => api.getNawaDetail(id!, signal),
     [id],
   );
+  const { data: allSensors } = useFetch((signal) => api.getSensors(signal), []);
 
   const [rangePreset, setRangePreset] = useState<RangePreset>('24h');
   const [customFrom, setCustomFrom] = useState('');
@@ -120,6 +121,29 @@ export function NawaDetailPage() {
     if (!rows.length) return null;
     return [...rows].sort((a, b) => new Date(b.utcTime).getTime() - new Date(a.utcTime).getTime())[0];
   }, [weatherPoints]);
+  const batteryPointsAllSensors = useMemo(() => {
+    const soil = points ?? [];
+    const weatherAsBatterySeries = (weatherPoints ?? []).map((p) => ({
+      utcTime: p.utcTime,
+      sensorIdentifier: p.sensorIdentifier,
+      sensorId: p.sensorId,
+      soilMoisture: null,
+      temperature: null,
+      battery: p.battery,
+      linkQuality: p.linkQuality,
+    }));
+
+    const merged = [...soil, ...weatherAsBatterySeries];
+    const seen = new Set<string>();
+    const deduped: typeof merged = [];
+    for (const row of merged) {
+      const k = `${row.sensorId ?? row.sensorIdentifier}|${row.utcTime}|${row.battery ?? 'null'}`;
+      if (seen.has(k)) continue;
+      seen.add(k);
+      deduped.push(row);
+    }
+    return deduped;
+  }, [points, weatherPoints]);
 
   useEffect(() => {
     if (!detail) return;
@@ -135,11 +159,11 @@ export function NawaDetailPage() {
 
   /** Jedna seria na wykresie na czujnik — scala stare i nowe `sensorIdentifier` z MQTT po zmianie nazwy w Z2M. */
   const sensorLegendById = useMemo(() => {
-    if (!detail?.sensors?.length) return undefined;
-    return Object.fromEntries(
-      detail.sensors.map((s) => [s.id, s.displayName?.trim() || s.externalId || s.id]),
-    );
-  }, [detail?.sensors]);
+    const fromAll = allSensors ?? [];
+    if (!detail?.sensors?.length && fromAll.length === 0) return undefined;
+    const rows = [...fromAll, ...(detail?.sensors ?? [])];
+    return Object.fromEntries(rows.map((s) => [s.id, s.displayName?.trim() || s.externalId || s.id]));
+  }, [allSensors, detail?.sensors]);
 
   const startCustomRange = () => {
     const end = new Date();
@@ -462,7 +486,7 @@ export function NawaDetailPage() {
       </div>
       <div className="nawa-glass nawa-chart-shell">
         <BatteryChart
-          points={points ?? []}
+          points={batteryPointsAllSensors}
           sensorLegendById={sensorLegendById}
           rangeMs={selectedRangeMs}
           timeBounds={selectedTimeBounds}
@@ -491,7 +515,7 @@ export function NawaDetailPage() {
           sensorLegendById={sensorLegendById}
           rangeMs={selectedRangeMs}
           timeBounds={selectedTimeBounds}
-          title="Opad (RB-SRAIN01)"
+          title="Opad"
         />
         <div style={{ height: 12 }} />
         <WeatherChart
@@ -500,7 +524,7 @@ export function NawaDetailPage() {
           sensorLegendById={sensorLegendById}
           rangeMs={selectedRangeMs}
           timeBounds={selectedTimeBounds}
-          title="Nasłonecznienie (RB-SRAIN01)"
+          title="Nasłonecznienie"
         />
       </div>
 
