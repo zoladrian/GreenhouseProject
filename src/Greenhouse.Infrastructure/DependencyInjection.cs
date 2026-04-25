@@ -36,6 +36,8 @@ public static class DependencyInjection
         services.AddScoped<ISensorReadingRepository, EfSensorReadingRepository>();
         services.AddScoped<INawaRepository, EfNawaRepository>();
         services.AddScoped<ISensorRepository, EfSensorRepository>();
+        services.AddScoped<IWeatherControlConfigRepository, EfWeatherControlConfigRepository>();
+        services.AddScoped<ISunScheduleRepository, EfSunScheduleRepository>();
         services.AddScoped<ISensorDuplicateMerger, EfSensorDuplicateMerger>();
         services.AddSingleton<IMqttPayloadParser, JsonMqttPayloadParser>();
 

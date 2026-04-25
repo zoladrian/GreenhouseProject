@@ -15,4 +15,7 @@ public sealed record WeatherSeriesPointDto(
     int? LinkQuality,
     bool? CleaningReminder,
     RainLevel? RainLevel,
-    LightLevel? LightLevel);
+    LightLevel? LightLevel,
+    bool IsNightBySchedule,
+    string CurrentRainStatus,
+    string CurrentLightStatus);

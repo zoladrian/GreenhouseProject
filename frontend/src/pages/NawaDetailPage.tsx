@@ -24,6 +24,9 @@ const PRESET_HOURS: Record<Exclude<RangePreset, 'custom'>, number> = {
 const RAIN_METRICS: WeatherMetricKey[] = ['rain', 'rainIntensityRaw'];
 const LIGHT_METRICS: WeatherMetricKey[] = ['illuminanceRaw', 'illuminanceAverage20MinRaw', 'illuminanceMaximumTodayRaw'];
 
+type ManualRainStatus = 'auto' | 'raining' | 'no-rain' | 'high-humidity';
+type ManualLightStatus = 'auto' | 'sunny' | 'cloudy' | 'night';
+
 function toDatetimeLocalValue(d: Date) {
   const pad = (n: number) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
@@ -37,6 +40,18 @@ export function NawaDetailPage() {
     [id],
   );
   const { data: allSensors } = useFetch((signal) => api.getSensors(signal), []);
+  const { data: weatherConfig, error: weatherConfigError, refetch: refetchWeatherConfig } = useFetch(
+    (signal) => api.getWeatherConfig(signal),
+    [],
+  );
+  const { data: weatherCurrentStatus, error: weatherStatusError, refetch: refetchWeatherStatus } = useFetch(
+    (signal) => api.getWeatherCurrentStatus(signal),
+    [],
+  );
+  const { data: sunSchedule, error: sunScheduleError, refetch: refetchSunSchedule } = useFetch(
+    (signal) => api.getSunSchedule(undefined, undefined, signal),
+    [],
+  );
 
   const [rangePreset, setRangePreset] = useState<RangePreset>('24h');
   const [customFrom, setCustomFrom] = useState('');
@@ -88,9 +103,12 @@ export function NawaDetailPage() {
     refetchDetail();
     refetchPoints();
     refetchWeather();
+    refetchWeatherConfig();
+    refetchWeatherStatus();
+    refetchSunSchedule();
     refetchWatering();
     refetchDrying();
-  }, [refetchDetail, refetchPoints, refetchWeather, refetchWatering, refetchDrying]);
+  }, [refetchDetail, refetchPoints, refetchWeather, refetchWeatherConfig, refetchWeatherStatus, refetchSunSchedule, refetchWatering, refetchDrying]);
 
   const fetchErrors = useMemo(
     () =>
@@ -98,10 +116,13 @@ export function NawaDetailPage() {
         detailError ? `Szczegóły nawy: ${detailError}` : null,
         pointsError ? `Wilgotność/temperatura/bateria: ${pointsError}` : null,
         weatherError ? `Pogoda: ${weatherError}` : null,
+        weatherConfigError ? `Konfiguracja pogody: ${weatherConfigError}` : null,
+        weatherStatusError ? `Status pogody: ${weatherStatusError}` : null,
+        sunScheduleError ? `Harmonogram słońca: ${sunScheduleError}` : null,
         wateringError ? `Skoki wilgotności: ${wateringError}` : null,
         dryingError ? `Tempo wysychania: ${dryingError}` : null,
       ].filter((x): x is string => x !== null),
-    [detailError, pointsError, weatherError, wateringError, dryingError],
+    [detailError, pointsError, weatherError, weatherConfigError, weatherStatusError, sunScheduleError, wateringError, dryingError],
   );
 
   const [name, setName] = useState('');
@@ -116,11 +137,17 @@ export function NawaDetailPage() {
   const [saveMsg, setSaveMsg] = useState<string | null>(null);
   const [voiceBriefLoading, setVoiceBriefLoading] = useState(false);
   const [voiceBriefError, setVoiceBriefError] = useState<string | null>(null);
-  const latestWeather = useMemo(() => {
-    const rows = weatherPoints ?? [];
-    if (!rows.length) return null;
-    return [...rows].sort((a, b) => new Date(b.utcTime).getTime() - new Date(a.utcTime).getTime())[0];
-  }, [weatherPoints]);
+  const [weatherSaving, setWeatherSaving] = useState(false);
+  const [weatherSaveMsg, setWeatherSaveMsg] = useState<string | null>(null);
+  const [rainDetectedMinRaw, setRainDetectedMinRaw] = useState('');
+  const [highHumidityMinRaw, setHighHumidityMinRaw] = useState('');
+  const [sunnyMinRaw, setSunnyMinRaw] = useState('');
+  const [cloudyMaxRaw, setCloudyMaxRaw] = useState('');
+  const [sunriseLocal, setSunriseLocal] = useState('06:00');
+  const [sunsetLocal, setSunsetLocal] = useState('20:00');
+  const [manualRainStatus, setManualRainStatus] = useState<ManualRainStatus>('auto');
+  const [manualLightStatus, setManualLightStatus] = useState<ManualLightStatus>('auto');
+  const [sunCsvImportMsg, setSunCsvImportMsg] = useState<string | null>(null);
   const batteryPointsAllSensors = useMemo(() => {
     const soil = points ?? [];
     const weatherAsBatterySeries = (weatherPoints ?? []).map((p) => ({
@@ -157,6 +184,18 @@ export function NawaDetailPage() {
     setTemperatureMax(detail.temperatureMax != null ? String(detail.temperatureMax) : '');
   }, [detail]);
 
+  useEffect(() => {
+    if (!weatherConfig) return;
+    setRainDetectedMinRaw(String(weatherConfig.rainDetectedMinRaw));
+    setHighHumidityMinRaw(String(weatherConfig.highHumidityMinRaw));
+    setSunnyMinRaw(String(weatherConfig.sunnyMinRaw));
+    setCloudyMaxRaw(String(weatherConfig.cloudyMaxRaw));
+    setSunriseLocal(weatherConfig.sunriseLocal);
+    setSunsetLocal(weatherConfig.sunsetLocal);
+    setManualRainStatus(weatherConfig.manualRainStatus);
+    setManualLightStatus(weatherConfig.manualLightStatus);
+  }, [weatherConfig]);
+
   /** Jedna seria na wykresie na czujnik — scala stare i nowe `sensorIdentifier` z MQTT po zmianie nazwy w Z2M. */
   const sensorLegendById = useMemo(() => {
     const fromAll = allSensors ?? [];
@@ -172,6 +211,12 @@ export function NawaDetailPage() {
     setCustomTo(toDatetimeLocalValue(end));
     setRangePreset('custom');
   };
+
+  const nightRanges = useMemo(() => {
+    if (!selectedTimeBounds) return [];
+    const byDate = Object.fromEntries((sunSchedule ?? []).map((x) => [x.date, { sunrise: x.sunriseLocal, sunset: x.sunsetLocal }]));
+    return buildNightRangesBySchedule(selectedTimeBounds.minMs, selectedTimeBounds.maxMs, byDate, sunriseLocal, sunsetLocal);
+  }, [selectedTimeBounds, sunSchedule, sunriseLocal, sunsetLocal]);
 
   async function saveNawaSettings() {
     if (!id) return;
@@ -212,6 +257,44 @@ export function NawaDetailPage() {
       setSaveMsg(e instanceof Error ? e.message : 'Błąd zapisu');
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function saveWeatherSettings() {
+    setWeatherSaveMsg(null);
+    const parse = (s: string) => {
+      const n = Number(s.replace(',', '.'));
+      return Number.isFinite(n) ? n : NaN;
+    };
+    const rainDetected = parse(rainDetectedMinRaw);
+    const highHumidity = parse(highHumidityMinRaw);
+    const sunnyMin = parse(sunnyMinRaw);
+    const cloudyMax = parse(cloudyMaxRaw);
+    if ([rainDetected, highHumidity, sunnyMin, cloudyMax].some((x) => Number.isNaN(x))) {
+      setWeatherSaveMsg('Uzupełnij poprawne wartości progów pogodowych.');
+      return;
+    }
+    setWeatherSaving(true);
+    try {
+      await api.updateWeatherConfig({
+        rainDetectedMinRaw: rainDetected,
+        highHumidityMinRaw: highHumidity,
+        sunnyMinRaw: sunnyMin,
+        cloudyMaxRaw: cloudyMax,
+        sunriseLocal,
+        sunsetLocal,
+        manualRainStatus,
+        manualLightStatus,
+        updatedAtUtc: weatherConfig?.updatedAtUtc ?? new Date().toISOString(),
+      });
+      setWeatherSaveMsg('Zapisano ustawienia pogody.');
+      refetchWeatherConfig();
+      refetchWeatherStatus();
+      refetchWeather();
+    } catch (e) {
+      setWeatherSaveMsg(e instanceof Error ? e.message : 'Błąd zapisu ustawień pogody.');
+    } finally {
+      setWeatherSaving(false);
     }
   }
 
@@ -494,21 +577,103 @@ export function NawaDetailPage() {
       </div>
       <div className="nawa-glass nawa-chart-shell">
         <h3 style={{ fontSize: 14, marginBottom: 10 }}>Serie pogodowe</h3>
-        {latestWeather && (
+        {weatherCurrentStatus && (
           <p style={{ fontSize: 12, color: '#475569', marginBottom: 10 }}>
-            Ostatni status: opad{' '}
-            <strong>{latestWeather.rain ? 'wykryto' : latestWeather.rain == null ? '—' : 'brak'}</strong>, poziom opadu{' '}
-            <strong>{rainLevelLabel(latestWeather.rainLevel)}</strong>, poziom jasności{' '}
-            <strong>{lightLevelLabel(latestWeather.lightLevel)}</strong>, czyszczenie{' '}
-            <strong>
-              {latestWeather.cleaningReminder == null
-                ? '—'
-                : latestWeather.cleaningReminder
-                  ? 'wymagane'
-                  : 'OK'}
-            </strong>.
+            Aktualny status: opad <strong>{rainStatusLabel(weatherCurrentStatus.rainStatus)}</strong>, nasłonecznienie{' '}
+            <strong>{lightStatusLabel(weatherCurrentStatus.lightStatus)}</strong>, pora <strong>{weatherCurrentStatus.isNightBySchedule ? 'noc' : 'dzień'}</strong>.
+            {weatherCurrentStatus.rainIntensityRaw != null && (
+              <>
+                {' '}
+                Opad surowy: <strong>{weatherCurrentStatus.rainIntensityRaw}</strong>.
+              </>
+            )}
+            {weatherCurrentStatus.illuminanceRaw != null && (
+              <>
+                {' '}
+                Jasność surowa: <strong>{weatherCurrentStatus.illuminanceRaw}</strong>.
+              </>
+            )}
           </p>
         )}
+        <section className="nawa-glass" style={{ borderRadius: 10, padding: 12, marginBottom: 12 }}>
+          <h4 style={{ fontSize: 13, marginBottom: 8 }}>Globalne ustawienia pogody</h4>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <label style={lbl}>
+              Opad od (raw)
+              <input style={inp} inputMode="decimal" value={rainDetectedMinRaw} onChange={(e) => setRainDetectedMinRaw(e.target.value)} />
+            </label>
+            <label style={lbl}>
+              Duża wilgotność od (raw)
+              <input style={inp} inputMode="decimal" value={highHumidityMinRaw} onChange={(e) => setHighHumidityMinRaw(e.target.value)} />
+            </label>
+            <label style={lbl}>
+              Słonecznie od (raw)
+              <input style={inp} inputMode="decimal" value={sunnyMinRaw} onChange={(e) => setSunnyMinRaw(e.target.value)} />
+            </label>
+            <label style={lbl}>
+              Zachmurzenie do (raw)
+              <input style={inp} inputMode="decimal" value={cloudyMaxRaw} onChange={(e) => setCloudyMaxRaw(e.target.value)} />
+            </label>
+            <label style={lbl}>
+              Wschód słońca (HH:mm)
+              <input style={inp} value={sunriseLocal} onChange={(e) => setSunriseLocal(e.target.value)} />
+            </label>
+            <label style={lbl}>
+              Zachód słońca (HH:mm)
+              <input style={inp} value={sunsetLocal} onChange={(e) => setSunsetLocal(e.target.value)} />
+            </label>
+            <label style={lbl}>
+              Ręczny status opadu
+              <select style={inp} value={manualRainStatus} onChange={(e) => setManualRainStatus(e.target.value as ManualRainStatus)}>
+                <option value="auto">Auto</option>
+                <option value="raining">Aktualnie pada</option>
+                <option value="no-rain">Aktualnie nie pada</option>
+                <option value="high-humidity">Aktualnie duża wilgotność</option>
+              </select>
+            </label>
+            <label style={lbl}>
+              Ręczny status nasłonecznienia
+              <select style={inp} value={manualLightStatus} onChange={(e) => setManualLightStatus(e.target.value as ManualLightStatus)}>
+                <option value="auto">Auto</option>
+                <option value="sunny">Jest słonecznie</option>
+                <option value="cloudy">Jest zachmurzenie</option>
+                <option value="night">Jest noc</option>
+              </select>
+            </label>
+          </div>
+          <div style={{ marginTop: 10, display: 'flex', gap: 8, alignItems: 'center' }}>
+            <button type="button" style={btnPrimary} disabled={weatherSaving} onClick={() => void saveWeatherSettings()}>
+              {weatherSaving ? 'Zapisywanie…' : 'Zapisz ustawienia pogody'}
+            </button>
+            {weatherSaveMsg && <span style={{ fontSize: 12, color: weatherSaveMsg.startsWith('Zapisano') ? '#15803d' : '#b91c1c' }}>{weatherSaveMsg}</span>}
+          </div>
+          <div style={{ marginTop: 10 }}>
+            <label style={{ ...lbl, fontSize: 12 }}>
+              Import CSV wschód/zachód (date,sunrise_local,sunset_local)
+              <input
+                type="file"
+                accept=".csv,text/csv"
+                style={inp}
+                onChange={async (e) => {
+                  const file = e.currentTarget.files?.[0];
+                  if (!file) return;
+                  setSunCsvImportMsg(null);
+                  try {
+                    const text = await file.text();
+                    const result = await api.importSunScheduleCsv(text);
+                    setSunCsvImportMsg(`Zaimportowano: ${result.importedRows}, pominięto: ${result.ignoredRows}.`);
+                    refetchSunSchedule();
+                  } catch (err) {
+                    setSunCsvImportMsg(err instanceof Error ? err.message : 'Błąd importu CSV.');
+                  } finally {
+                    e.currentTarget.value = '';
+                  }
+                }}
+              />
+            </label>
+            {sunCsvImportMsg && <p style={{ marginTop: 6, fontSize: 12 }}>{sunCsvImportMsg}</p>}
+          </div>
+        </section>
         <WeatherChart
           points={weatherPoints ?? []}
           selectedMetrics={RAIN_METRICS}
@@ -516,6 +681,7 @@ export function NawaDetailPage() {
           rangeMs={selectedRangeMs}
           timeBounds={selectedTimeBounds}
           title="Opad"
+          nightRangesMs={nightRanges}
         />
         <div style={{ height: 12 }} />
         <WeatherChart
@@ -525,6 +691,7 @@ export function NawaDetailPage() {
           rangeMs={selectedRangeMs}
           timeBounds={selectedTimeBounds}
           title="Nasłonecznienie"
+          nightRangesMs={nightRanges}
         />
       </div>
 
@@ -638,36 +805,72 @@ function InfoCard({ label, value }: { label: string; value: string }) {
   );
 }
 
-function rainLevelLabel(v: number | null): string {
+function rainStatusLabel(v: string): string {
   switch (v) {
-    case 0:
-      return 'Brak opadu';
-    case 1:
-      return 'Rosa / mgła / wilgoć';
-    case 2:
-      return 'Lekki opad';
-    case 3:
-      return 'Umiarkowany opad';
-    case 4:
-      return 'Silny opad';
+    case 'raining':
+      return 'aktualnie pada';
+    case 'no-rain':
+      return 'aktualnie nie pada';
+    case 'high-humidity':
+      return 'aktualnie duża wilgotność';
+    case 'auto':
+      return 'auto';
     default:
-      return '—';
+      return 'nieznane';
   }
 }
 
-function lightLevelLabel(v: number | null): string {
+function lightStatusLabel(v: string): string {
   switch (v) {
-    case 0:
-      return 'Noc';
-    case 1:
-      return 'Ciemno / pochmurno';
-    case 2:
-      return 'Jasno';
-    case 3:
-      return 'Słonecznie';
-    case 4:
-      return 'Pełne słońce';
+    case 'sunny':
+      return 'jest słonecznie';
+    case 'cloudy':
+      return 'jest zachmurzenie';
+    case 'night':
+      return 'noc';
+    case 'auto':
+      return 'auto';
     default:
-      return '—';
+      return 'nieznane';
   }
+}
+
+function parseTime(v: string): { h: number; m: number } | null {
+  const m = /^(\d{1,2}):(\d{2})$/.exec(v.trim());
+  if (!m) return null;
+  const h = Number(m[1]);
+  const mm = Number(m[2]);
+  if (!Number.isInteger(h) || !Number.isInteger(mm) || h < 0 || h > 23 || mm < 0 || mm > 59) return null;
+  return { h, m: mm };
+}
+
+function buildNightRangesBySchedule(
+  fromMs: number,
+  toMs: number,
+  byDate: Record<string, { sunrise: string; sunset: string }>,
+  fallbackSunrise: string,
+  fallbackSunset: string,
+): Array<{ fromMs: number; toMs: number }> {
+  const out: Array<{ fromMs: number; toMs: number }> = [];
+  const d0 = new Date(fromMs);
+  d0.setHours(0, 0, 0, 0);
+  for (let day = new Date(d0.getTime()); day.getTime() <= toMs + 24 * 3600_000; day = new Date(day.getTime() + 24 * 3600_000)) {
+    const key = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`;
+    const src = byDate[key];
+    const sr = parseTime(src?.sunrise ?? fallbackSunrise);
+    const ss = parseTime(src?.sunset ?? fallbackSunset);
+    if (!sr || !ss) continue;
+    const sunrise = sr;
+    const sunset = ss;
+    const sunriseMs = new Date(day.getFullYear(), day.getMonth(), day.getDate(), sunrise.h, sunrise.m, 0, 0).getTime();
+    const sunsetMs = new Date(day.getFullYear(), day.getMonth(), day.getDate(), sunset.h, sunset.m, 0, 0).getTime();
+    const nextSunriseMs = sunriseMs + 24 * 3600_000;
+    if (sunsetMs >= sunriseMs) {
+      out.push({ fromMs: Math.max(fromMs, day.getTime()), toMs: Math.min(toMs, sunriseMs) });
+      out.push({ fromMs: Math.max(fromMs, sunsetMs), toMs: Math.min(toMs, nextSunriseMs) });
+    } else {
+      out.push({ fromMs: Math.max(fromMs, sunsetMs), toMs: Math.min(toMs, sunriseMs) });
+    }
+  }
+  return out.filter((r) => r.toMs > r.fromMs);
 }

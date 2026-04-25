@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { api, type NawaSnapshot } from '../api/client';
 import { useFetch } from '../hooks/useFetch';
 import { speakPolish, useTts } from '../hooks/useTts';
-import { buildVoiceDailyReportText } from '../voice/voiceDailyReportText';
+import { buildVoiceDailyReportText, buildVoiceWeatherReportText } from '../voice/voiceDailyReportText';
 import { StatusBadge } from '../components/StatusBadge';
 import { BatteryIcon } from '../components/BatteryIcon';
 import { DashboardHero } from '../components/DashboardHero';
@@ -14,6 +14,7 @@ export function DashboardPage() {
   const navigate = useNavigate();
   const tts = useTts();
   const [voiceReportLoading, setVoiceReportLoading] = useState(false);
+  const [voiceWeatherLoading, setVoiceWeatherLoading] = useState(false);
   const [voiceReportError, setVoiceReportError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -129,26 +130,48 @@ export function DashboardPage() {
       </div>
 
       <div className="dashboard-page__voice" style={{ marginBottom: 16 }}>
-        <button
-          type="button"
-          className="btn-primary"
-          disabled={voiceReportLoading}
-          style={{ width: '100%', padding: '12px 16px', fontSize: 15, fontWeight: 600 }}
-          onClick={async () => {
-            setVoiceReportError(null);
-            setVoiceReportLoading(true);
-            try {
-              const report = await api.getVoiceDailyReport();
-              speakPolish(buildVoiceDailyReportText(report));
-            } catch (e) {
-              setVoiceReportError(e instanceof Error ? e.message : 'Błąd pobierania raportu');
-            } finally {
-              setVoiceReportLoading(false);
-            }
-          }}
-        >
-          {voiceReportLoading ? 'Ładowanie raportu…' : 'Odczytaj dzienny raport (głos)'}
-        </button>
+        <div style={{ display: 'grid', gap: 8 }}>
+          <button
+            type="button"
+            className="btn-primary"
+            disabled={voiceReportLoading}
+            style={{ width: '100%', padding: '12px 16px', fontSize: 15, fontWeight: 600 }}
+            onClick={async () => {
+              setVoiceReportError(null);
+              setVoiceReportLoading(true);
+              try {
+                const report = await api.getVoiceClimateReport();
+                speakPolish(buildVoiceDailyReportText(report));
+              } catch (e) {
+                setVoiceReportError(e instanceof Error ? e.message : 'Błąd pobierania raportu');
+              } finally {
+                setVoiceReportLoading(false);
+              }
+            }}
+          >
+            {voiceReportLoading ? 'Ładowanie raportu…' : 'Raport wilgotność i temperatura (głos)'}
+          </button>
+          <button
+            type="button"
+            className="btn-primary"
+            disabled={voiceWeatherLoading}
+            style={{ width: '100%', padding: '12px 16px', fontSize: 15, fontWeight: 600 }}
+            onClick={async () => {
+              setVoiceReportError(null);
+              setVoiceWeatherLoading(true);
+              try {
+                const report = await api.getVoiceWeatherReport();
+                speakPolish(buildVoiceWeatherReportText(report));
+              } catch (e) {
+                setVoiceReportError(e instanceof Error ? e.message : 'Błąd pobierania raportu pogodowego');
+              } finally {
+                setVoiceWeatherLoading(false);
+              }
+            }}
+          >
+            {voiceWeatherLoading ? 'Ładowanie raportu…' : 'Raport deszcz i nasłonecznienie (głos)'}
+          </button>
+        </div>
         <p className="text-muted" style={{ fontSize: 11, margin: '6px 0 0', lineHeight: 1.35 }}>
           Dane z maliny (średnie od lokalnej północy, strefa z konfiguracji API). Wymaga działającej syntezy mowy w
           przeglądarce.

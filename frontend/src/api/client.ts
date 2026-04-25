@@ -167,6 +167,9 @@ export interface WeatherPoint {
   cleaningReminder: boolean | null;
   rainLevel: number | null;
   lightLevel: number | null;
+  isNightBySchedule: boolean;
+  currentRainStatus: 'auto' | 'raining' | 'no-rain' | 'high-humidity' | 'unknown';
+  currentLightStatus: 'auto' | 'sunny' | 'cloudy' | 'night' | 'unknown';
 }
 
 /** Z API (camelCase enum z .NET). */
@@ -213,10 +216,56 @@ export interface VoiceDailyReportDto {
   nawy: NawaVoiceLineDto[];
 }
 
+export interface VoiceWeatherReportDto {
+  greetingLeadin: string;
+  localTime: string;
+  localDateLong: string;
+  rainStatus: string;
+  lightStatus: string;
+  isNightBySchedule: boolean;
+  rainIntensityRaw: number | null;
+  illuminanceRaw: number | null;
+  sourceUtcTime: string | null;
+}
+
+export interface WeatherControlConfigDto {
+  rainDetectedMinRaw: number;
+  highHumidityMinRaw: number;
+  sunnyMinRaw: number;
+  cloudyMaxRaw: number;
+  sunriseLocal: string;
+  sunsetLocal: string;
+  manualRainStatus: 'auto' | 'raining' | 'no-rain' | 'high-humidity';
+  manualLightStatus: 'auto' | 'sunny' | 'cloudy' | 'night';
+  updatedAtUtc: string;
+}
+
+export interface WeatherCurrentStatusDto {
+  rainStatus: string;
+  lightStatus: string;
+  isNightBySchedule: boolean;
+  rainIntensityRaw: number | null;
+  illuminanceRaw: number | null;
+  sourceUtcTime: string | null;
+}
+
+export interface SunScheduleEntryDto {
+  date: string;
+  sunriseLocal: string;
+  sunsetLocal: string;
+}
+
+export interface SunScheduleImportResultDto {
+  importedRows: number;
+  ignoredRows: number;
+}
+
 const sig = (signal?: AbortSignal): RequestInit | undefined => (signal ? { signal } : undefined);
 
 export const api = {
   getVoiceDailyReport: (signal?: AbortSignal) => fetchJson<VoiceDailyReportDto>('/voice/daily-report', sig(signal)),
+  getVoiceClimateReport: (signal?: AbortSignal) => fetchJson<VoiceDailyReportDto>('/voice/daily-report-climate', sig(signal)),
+  getVoiceWeatherReport: (signal?: AbortSignal) => fetchJson<VoiceWeatherReportDto>('/voice/daily-report-weather', sig(signal)),
   getNawaVoiceBrief: (id: string, signal?: AbortSignal) =>
     fetchJson<NawaVoiceBriefDto>(`/voice/nawa/${id}/brief`, sig(signal)),
   getDashboard: (signal?: AbortSignal) => fetchJson<NawaSnapshot[]>('/dashboard', sig(signal)),
@@ -264,5 +313,26 @@ export const api = {
     if (from) qs += `&from=${from}`;
     if (to) qs += `&to=${to}`;
     return fetchJson<DryingRateDto[]>(`/chart/drying-rate?${qs}`, sig(signal));
+  },
+  getWeatherConfig: (signal?: AbortSignal) => fetchJson<WeatherControlConfigDto>('/weather/config', sig(signal)),
+  updateWeatherConfig: (body: WeatherControlConfigDto) => putJson<WeatherControlConfigDto>('/weather/config', body),
+  getWeatherCurrentStatus: (signal?: AbortSignal) => fetchJson<WeatherCurrentStatusDto>('/weather/current-status', sig(signal)),
+  getSunSchedule: (from?: string, to?: string, signal?: AbortSignal) => {
+    let qs = '';
+    if (from) qs += `from=${encodeURIComponent(from)}`;
+    if (to) qs += `${qs ? '&' : ''}to=${encodeURIComponent(to)}`;
+    return fetchJson<SunScheduleEntryDto[]>(`/weather/sun-schedule${qs ? `?${qs}` : ''}`, sig(signal));
+  },
+  importSunScheduleCsv: async (csvContent: string) => {
+    const resp = await fetch(`${BASE}/weather/sun-schedule/import`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/csv' },
+      body: csvContent,
+    });
+    if (!resp.ok) {
+      const { msg, snippet } = await buildErrorMessage(resp);
+      throw new ApiError(resp.status, msg, snippet);
+    }
+    return (await resp.json()) as SunScheduleImportResultDto;
   },
 };

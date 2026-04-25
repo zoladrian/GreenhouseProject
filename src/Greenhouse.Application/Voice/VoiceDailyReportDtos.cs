@@ -18,3 +18,14 @@ public sealed record NawaVoiceLineDto(
 
 /// <summary>Krótkie podsumowanie głosowe dla jednej nawy (panel szczegółów).</summary>
 public sealed record NawaVoiceBriefDto(string NawaName, string SpokenText);
+
+public sealed record VoiceWeatherReportDto(
+    string GreetingLeadin,
+    string LocalTime,
+    string LocalDateLong,
+    string RainStatus,
+    string LightStatus,
+    bool IsNightBySchedule,
+    decimal? RainIntensityRaw,
+    decimal? IlluminanceRaw,
+    DateTime? SourceUtcTime);

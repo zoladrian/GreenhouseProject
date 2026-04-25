@@ -1,6 +1,7 @@
 using Greenhouse.Domain.Nawy;
 using Greenhouse.Domain.SensorReadings;
 using Greenhouse.Domain.Sensors;
+using Greenhouse.Domain.Weather;
 using Microsoft.EntityFrameworkCore;
 
 namespace Greenhouse.Infrastructure.Persistence;
@@ -17,6 +18,10 @@ public sealed class GreenhouseDbContext : DbContext
     public DbSet<Nawa> Nawy => Set<Nawa>();
 
     public DbSet<Sensor> Sensors => Set<Sensor>();
+
+    public DbSet<WeatherControlConfig> WeatherControlConfigs => Set<WeatherControlConfig>();
+
+    public DbSet<SunScheduleEntry> SunScheduleEntries => Set<SunScheduleEntry>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -74,6 +79,30 @@ public sealed class GreenhouseDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(x => x.SensorId)
                 .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<WeatherControlConfig>(builder =>
+        {
+            builder.ToTable("WeatherControlConfigs");
+            builder.HasKey(x => x.Id);
+            builder.Property(x => x.RainDetectedMinRaw).IsRequired();
+            builder.Property(x => x.HighHumidityMinRaw).IsRequired();
+            builder.Property(x => x.SunnyMinRaw).IsRequired();
+            builder.Property(x => x.CloudyMaxRaw).IsRequired();
+            builder.Property(x => x.SunriseLocal).HasMaxLength(5).IsRequired();
+            builder.Property(x => x.SunsetLocal).HasMaxLength(5).IsRequired();
+            builder.Property(x => x.ManualRainStatus).HasMaxLength(32).IsRequired();
+            builder.Property(x => x.ManualLightStatus).HasMaxLength(32).IsRequired();
+            builder.Property(x => x.UpdatedAtUtc).IsRequired();
+        });
+
+        modelBuilder.Entity<SunScheduleEntry>(builder =>
+        {
+            builder.ToTable("SunScheduleEntries");
+            builder.HasKey(x => x.Date);
+            builder.Property(x => x.SunriseLocal).HasMaxLength(5).IsRequired();
+            builder.Property(x => x.SunsetLocal).HasMaxLength(5).IsRequired();
+            builder.Property(x => x.UpdatedAtUtc).IsRequired();
         });
     }
 }

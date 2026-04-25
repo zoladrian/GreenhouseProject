@@ -8,15 +8,18 @@ public sealed class GetWeatherSeriesQueryService
     private readonly ISensorRepository _sensors;
     private readonly ISensorReadingRepository _readings;
     private readonly WeatherInterpretationService _interpretation;
+    private readonly WeatherControlConfigService _weatherControl;
 
     public GetWeatherSeriesQueryService(
         ISensorRepository sensors,
         ISensorReadingRepository readings,
-        WeatherInterpretationService interpretation)
+        WeatherInterpretationService interpretation,
+        WeatherControlConfigService weatherControl)
     {
         _sensors = sensors;
         _readings = readings;
         _interpretation = interpretation;
+        _weatherControl = weatherControl;
     }
 
     public async Task<IReadOnlyList<WeatherSeriesPointDto>> ExecuteAsync(
@@ -33,6 +36,8 @@ public sealed class GetWeatherSeriesQueryService
         }
 
         var readings = await _readings.GetBySensorIdsAsync(sensorIds, from, to, cancellationToken);
+        var weatherCfg = await _weatherControl.GetConfigAsync(cancellationToken);
+        var scheduleMap = await _weatherControl.GetScheduleMapAsync(DateOnly.FromDateTime(from.ToLocalTime()), DateOnly.FromDateTime(to.ToLocalTime()), cancellationToken);
         var result = new List<WeatherSeriesPointDto>(readings.Count);
         foreach (var perSensor in readings
                      .Where(r => r.SensorId.HasValue)
@@ -54,6 +59,23 @@ public sealed class GetWeatherSeriesQueryService
                     ? (int)Math.Round((row.ReceivedAtUtc - rainStreakStart.Value).TotalMinutes)
                     : 0;
                 var interpreted = _interpretation.Interpret(row, rainSignalMinutes);
+                var day = DateOnly.FromDateTime(row.ReceivedAtUtc.ToLocalTime());
+                var schedule = scheduleMap.TryGetValue(day, out var s)
+                    ? s
+                    : (weatherCfg.SunriseLocal, weatherCfg.SunsetLocal);
+                var isNight = WeatherControlConfigService.IsNightBySchedule(row.ReceivedAtUtc, schedule.Item1, schedule.Item2);
+                var currentRain = WeatherControlConfigService.ResolveRainStatus(
+                    weatherCfg.ManualRainStatus,
+                    row.Rain,
+                    row.RainIntensityRaw,
+                    weatherCfg.RainDetectedMinRaw,
+                    weatherCfg.HighHumidityMinRaw);
+                var currentLight = WeatherControlConfigService.ResolveLightStatus(
+                    weatherCfg.ManualLightStatus,
+                    row.IlluminanceRaw ?? row.IlluminanceAverage20MinRaw,
+                    weatherCfg.SunnyMinRaw,
+                    weatherCfg.CloudyMaxRaw,
+                    isNight);
                 result.Add(new WeatherSeriesPointDto(
                     row.ReceivedAtUtc,
                     row.SensorIdentifier,
@@ -67,7 +89,10 @@ public sealed class GetWeatherSeriesQueryService
                     row.LinkQuality,
                     row.CleaningReminder,
                     interpreted.RainLevel,
-                    interpreted.LightLevel));
+                    interpreted.LightLevel,
+                    isNight,
+                    currentRain,
+                    currentLight));
             }
         }
 

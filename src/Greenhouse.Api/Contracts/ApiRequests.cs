@@ -18,3 +18,13 @@ public sealed record UpdateNawaRequest(
 public sealed record AssignSensorNawaRequest(Guid? NawaId);
 
 public sealed record UpdateSensorDisplayNameRequest(string? DisplayName);
+
+public sealed record UpdateWeatherControlConfigRequest(
+    decimal RainDetectedMinRaw,
+    decimal HighHumidityMinRaw,
+    decimal SunnyMinRaw,
+    decimal CloudyMaxRaw,
+    string SunriseLocal,
+    string SunsetLocal,
+    string ManualRainStatus,
+    string ManualLightStatus);

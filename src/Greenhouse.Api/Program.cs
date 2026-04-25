@@ -129,6 +129,18 @@ app.MapGet("/api/voice/daily-report", async (GetVoiceDailyReportQueryService que
     return Results.Ok(report);
 });
 
+app.MapGet("/api/voice/daily-report-climate", async (GetVoiceDailyReportQueryService query, CancellationToken ct) =>
+{
+    var report = await query.ExecuteAsync(ct);
+    return Results.Ok(report);
+});
+
+app.MapGet("/api/voice/daily-report-weather", async (GetVoiceWeatherReportQueryService query, CancellationToken ct) =>
+{
+    var report = await query.ExecuteAsync(ct);
+    return Results.Ok(report);
+});
+
 app.MapGet("/api/voice/nawa/{id:guid}/brief", async (Guid id, GetNawaVoiceBriefQueryService query, CancellationToken ct) =>
 {
     var brief = await query.ExecuteAsync(id, ct);
@@ -229,6 +241,66 @@ app.MapGet("/api/sensor/health", async (GetSensorHealthQueryService query, Cance
     var list = await query.ExecuteAsync(ct);
     return Results.Ok(list);
 });
+
+// ─── Weather config / status ───────────────────────────────
+app.MapGet("/api/weather/config", async (WeatherControlConfigService service, CancellationToken ct) =>
+{
+    var dto = await service.GetConfigAsync(ct);
+    return Results.Ok(dto);
+});
+
+app.MapPut("/api/weather/config", async (UpdateWeatherControlConfigRequest body, WeatherControlConfigService service, CancellationToken ct) =>
+{
+    try
+    {
+        var dto = await service.UpdateAsync(
+            body.RainDetectedMinRaw,
+            body.HighHumidityMinRaw,
+            body.SunnyMinRaw,
+            body.CloudyMaxRaw,
+            body.SunriseLocal,
+            body.SunsetLocal,
+            body.ManualRainStatus,
+            body.ManualLightStatus,
+            ct);
+        return Results.Ok(dto);
+    }
+    catch (ArgumentException ex)
+    {
+        return Results.BadRequest(new { error = ex.Message });
+    }
+}).AddEndpointFilter<ApiKeyMutationEndpointFilter>();
+
+app.MapGet("/api/weather/current-status", async (WeatherControlConfigService service, CancellationToken ct) =>
+{
+    var dto = await service.GetCurrentStatusAsync(ct);
+    return Results.Ok(dto);
+});
+
+app.MapGet("/api/weather/sun-schedule", async (DateOnly? from, DateOnly? to, WeatherControlConfigService service, CancellationToken ct) =>
+{
+    var today = DateOnly.FromDateTime(DateTime.Today);
+    var f = from ?? today.AddDays(-3);
+    var t = to ?? today.AddDays(30);
+    if (t < f) return Results.BadRequest(new { error = "Zakres dat jest nieprawidłowy." });
+    var list = await service.GetScheduleAsync(f, t, ct);
+    return Results.Ok(list);
+});
+
+app.MapPost("/api/weather/sun-schedule/import", async (HttpRequest request, WeatherControlConfigService service, CancellationToken ct) =>
+{
+    using var reader = new StreamReader(request.Body);
+    var csv = await reader.ReadToEndAsync(ct);
+    try
+    {
+        var result = await service.ImportCsvAsync(csv, ct);
+        return Results.Ok(result);
+    }
+    catch (ArgumentException ex)
+    {
+        return Results.BadRequest(new { error = ex.Message });
+    }
+}).AddEndpointFilter<ApiKeyMutationEndpointFilter>();
 
 // ─── Charts / Analytics ────────────────────────────────────
 app.MapGet("/api/chart/moisture", async (

@@ -1,4 +1,4 @@
-import type { VoiceDailyReportDto } from '../api/client';
+import type { VoiceDailyReportDto, VoiceWeatherReportDto } from '../api/client';
 import { formatNumberPl } from '../utils/formatPl';
 
 /** Tekst pod Web Speech API — w pełni offline (dane z API na malince). Krótkie zdania = lepsze pauzy i odmiana w syntezie. */
@@ -36,4 +36,40 @@ export function buildVoiceDailyReportText(r: VoiceDailyReportDto): string {
 
   parts.push('Miłego dnia.');
   return parts.join(' ');
+}
+
+export function buildVoiceWeatherReportText(r: VoiceWeatherReportDto): string {
+  const parts: string[] = [];
+  parts.push(`${r.greetingLeadin}. Jest godzina ${r.localTime}. ${r.localDateLong}.`);
+  parts.push(`Raport pogody: status opadu ${rainStatusText(r.rainStatus)}, status nasłonecznienia ${lightStatusText(r.lightStatus)}.`);
+  parts.push(r.isNightBySchedule ? 'Według harmonogramu jest noc.' : 'Według harmonogramu jest dzień.');
+  if (r.rainIntensityRaw != null) parts.push(`Surowa intensywność opadu: ${formatNumberPl(r.rainIntensityRaw)}.`);
+  if (r.illuminanceRaw != null) parts.push(`Surowa jasność: ${formatNumberPl(r.illuminanceRaw)}.`);
+  return parts.join(' ');
+}
+
+function rainStatusText(v: string): string {
+  switch (v) {
+    case 'raining':
+      return 'aktualnie pada';
+    case 'no-rain':
+      return 'aktualnie nie pada';
+    case 'high-humidity':
+      return 'aktualnie duża wilgotność';
+    default:
+      return 'auto';
+  }
+}
+
+function lightStatusText(v: string): string {
+  switch (v) {
+    case 'sunny':
+      return 'jest słonecznie';
+    case 'cloudy':
+      return 'jest zachmurzenie';
+    case 'night':
+      return 'jest noc';
+    default:
+      return 'auto';
+  }
 }

@@ -26,6 +26,7 @@ export function WeatherChart({
   rangeMs: rangeMsOverride,
   timeBounds,
   title = 'Pogoda',
+  nightRangesMs = [],
 }: {
   points: WeatherPoint[];
   selectedMetrics: WeatherMetricKey[];
@@ -35,6 +36,7 @@ export function WeatherChart({
   /** Twarde granice osi czasu z filtra (od-do). */
   timeBounds?: { minMs: number; maxMs: number } | null;
   title?: string;
+  nightRangesMs?: Array<{ fromMs: number; toMs: number }>;
 }) {
   // Hooki przed wczesnym returnem — kolejność wywołań musi być stała.
   const keys = useMemo(
@@ -104,9 +106,16 @@ export function WeatherChart({
         : ({ type: 'value' as const, name: 'Wartość surowa' } as const),
       grid: { left: 52, right: 52, top: 40, bottom: Math.max(56, chartGridBottomPl(rangeMs)) },
       animation: !(rangeMs && rangeMs > 24 * 3600_000),
+      markArea: nightRangesMs.length
+        ? {
+            silent: true,
+            itemStyle: { opacity: 0.12 },
+            data: nightRangesMs.map((r) => [{ xAxis: r.fromMs }, { xAxis: r.toMs }]),
+          }
+        : undefined,
       series,
     }),
-    [rangeMs, series, selectedMetrics, timeBounds, title],
+    [nightRangesMs, rangeMs, series, selectedMetrics, timeBounds, title],
   );
 
   if (points.length === 0 || selectedMetrics.length === 0) {
