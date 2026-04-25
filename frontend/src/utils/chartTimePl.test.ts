@@ -33,4 +33,13 @@ describe('chartTimePl', () => {
     const label = axis.axisLabel?.formatter?.(Date.parse('2026-04-25T11:30:00Z')) ?? '';
     expect(label).not.toContain(':');
   });
+
+  it('echartsTimeXAxisPl should show only time for 24h and below', () => {
+    const axis = echartsTimeXAxisPl(24 * 3600_000) as {
+      axisLabel?: { formatter?: (v: number) => string };
+    };
+    const label = axis.axisLabel?.formatter?.(Date.parse('2026-04-25T11:30:00Z')) ?? '';
+    expect(label).toContain(':');
+    expect(label).not.toContain('.');
+  });
 });

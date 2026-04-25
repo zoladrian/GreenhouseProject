@@ -77,7 +77,7 @@ export function chartGridBottomPl(rangeMs: number | null): number {
 
 function formatAdaptiveAxisTime(value: number, rangeMs: number | null): string {
   if (rangeMs == null) return formatPlAxisTime(value);
-  if (rangeMs <= 6 * 3600_000) return axisShortTimeFmt.format(value);
+  if (rangeMs <= 24 * 3600_000) return axisShortTimeFmt.format(value);
   if (rangeMs <= 48 * 3600_000) return axisDayTimeFmt.format(value);
   if (rangeMs <= 45 * 24 * 3600_000) return axisDayFmt.format(value);
   return axisMonthFmt.format(value);
