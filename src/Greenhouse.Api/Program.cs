@@ -80,6 +80,7 @@ using (var scope = app.Services.CreateScope())
     await dbContext.Database.MigrateAsync();
     await SqlitePragmas.ApplyWalAsync(dbContext);
 }
+await SunScheduleBootstrapper.TryImportDefaultScheduleAsync(app.Services, app.Logger);
 
 app.UseCors();
 app.UseDefaultFiles();

@@ -147,7 +147,6 @@ export function NawaDetailPage() {
   const [sunsetLocal, setSunsetLocal] = useState('20:00');
   const [manualRainStatus, setManualRainStatus] = useState<ManualRainStatus>('auto');
   const [manualLightStatus, setManualLightStatus] = useState<ManualLightStatus>('auto');
-  const [sunCsvImportMsg, setSunCsvImportMsg] = useState<string | null>(null);
   const batteryPointsAllSensors = useMemo(() => {
     const soil = points ?? [];
     const weatherAsBatterySeries = (weatherPoints ?? []).map((p) => ({
@@ -647,32 +646,9 @@ export function NawaDetailPage() {
             </button>
             {weatherSaveMsg && <span style={{ fontSize: 12, color: weatherSaveMsg.startsWith('Zapisano') ? '#15803d' : '#b91c1c' }}>{weatherSaveMsg}</span>}
           </div>
-          <div style={{ marginTop: 10 }}>
-            <label style={{ ...lbl, fontSize: 12 }}>
-              Import CSV wschód/zachód (date,sunrise_local,sunset_local)
-              <input
-                type="file"
-                accept=".csv,text/csv"
-                style={inp}
-                onChange={async (e) => {
-                  const file = e.currentTarget.files?.[0];
-                  if (!file) return;
-                  setSunCsvImportMsg(null);
-                  try {
-                    const text = await file.text();
-                    const result = await api.importSunScheduleCsv(text);
-                    setSunCsvImportMsg(`Zaimportowano: ${result.importedRows}, pominięto: ${result.ignoredRows}.`);
-                    refetchSunSchedule();
-                  } catch (err) {
-                    setSunCsvImportMsg(err instanceof Error ? err.message : 'Błąd importu CSV.');
-                  } finally {
-                    e.currentTarget.value = '';
-                  }
-                }}
-              />
-            </label>
-            {sunCsvImportMsg && <p style={{ marginTop: 6, fontSize: 12 }}>{sunCsvImportMsg}</p>}
-          </div>
+          <p style={{ marginTop: 10, fontSize: 12, color: '#64748b' }}>
+            Harmonogram wschodu/zachodu jest ładowany automatycznie z pliku dla Szczecina przy starcie API.
+          </p>
         </section>
         <WeatherChart
           points={weatherPoints ?? []}
