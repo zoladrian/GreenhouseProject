@@ -10,7 +10,6 @@ import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'r
 import { QRCodeSVG } from 'qrcode.react';
 import { NawyPageBackdrop } from '../components/NawyPageBackdrop';
 import { formatDateTimeFullPl, keyFromTimestampAndLabel } from '../utils/formatPl';
-import { buildVoiceWeatherReportText } from '../voice/voiceDailyReportText';
 
 type RangePreset = '1h' | '6h' | '24h' | '7d' | '30d' | 'custom';
 
@@ -414,11 +413,12 @@ export function NawaDetailPage() {
           disabled={voiceWeatherLoading}
           style={{ width: '100%', padding: '12px 16px', fontSize: 15, fontWeight: 600 }}
           onClick={async () => {
+            if (!id) return;
             setVoiceBriefError(null);
             setVoiceWeatherLoading(true);
             try {
-              const report = await api.getVoiceWeatherReport();
-              speakPolish(buildVoiceWeatherReportText(report));
+              const brief = await api.getNawaWeatherVoiceBrief(id);
+              speakPolish(brief.spokenText);
             } catch (e) {
               setVoiceBriefError(e instanceof Error ? e.message : 'Błąd pobierania raportu pogodowego');
             } finally {
@@ -468,7 +468,7 @@ export function NawaDetailPage() {
             <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />
             Nawa aktywna
           </label>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+          <div className="nawa-weather-config-grid" style={{ display: 'grid', gap: 10 }}>
             <label style={lbl}>
               Podlej przy wilgotności ≤ (%)
               <input
@@ -764,12 +764,22 @@ export function NawaDetailPage() {
   );
 }
 
-const lbl: CSSProperties = { display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12, color: '#475569' };
+const lbl: CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 4,
+  fontSize: 12,
+  color: '#475569',
+  minWidth: 0,
+  overflowWrap: 'anywhere',
+};
 const inp: CSSProperties = {
   padding: '8px 10px',
   borderRadius: 8,
   border: '1px solid #e2e8f0',
   fontSize: 14,
+  width: '100%',
+  minWidth: 0,
 };
 const btnPrimary: React.CSSProperties = {
   background: 'var(--color-brand-green, #16a34a)',

@@ -268,6 +268,8 @@ export const api = {
   getVoiceWeatherReport: (signal?: AbortSignal) => fetchJson<VoiceWeatherReportDto>('/voice/daily-report-weather', sig(signal)),
   getNawaVoiceBrief: (id: string, signal?: AbortSignal) =>
     fetchJson<NawaVoiceBriefDto>(`/voice/nawa/${id}/brief`, sig(signal)),
+  getNawaWeatherVoiceBrief: (id: string, signal?: AbortSignal) =>
+    fetchJson<NawaVoiceBriefDto>(`/voice/nawa/${id}/weather-brief`, sig(signal)),
   getDashboard: (signal?: AbortSignal) => fetchJson<NawaSnapshot[]>('/dashboard', sig(signal)),
   getNawy: (signal?: AbortSignal) => fetchJson<NawaDto[]>('/nawa', sig(signal)),
   getNawaDetail: (id: string, signal?: AbortSignal) => fetchJson<NawaDetailDto>(`/nawa/${id}/detail`, sig(signal)),

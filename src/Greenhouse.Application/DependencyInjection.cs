@@ -49,6 +49,7 @@ public static class DependencyInjection
         services.AddScoped<GetVoiceDailyReportQueryService>();
         services.AddScoped<GetVoiceWeatherReportQueryService>();
         services.AddScoped<GetNawaVoiceBriefQueryService>();
+        services.AddScoped<GetNawaWeatherVoiceBriefQueryService>();
         services.AddSingleton<IValidateOptions<WeatherInterpretationOptions>, WeatherInterpretationOptionsValidator>();
 
         return services;

@@ -148,6 +148,12 @@ app.MapGet("/api/voice/nawa/{id:guid}/brief", async (Guid id, GetNawaVoiceBriefQ
     return brief is null ? Results.NotFound() : Results.Ok(brief);
 });
 
+app.MapGet("/api/voice/nawa/{id:guid}/weather-brief", async (Guid id, GetNawaWeatherVoiceBriefQueryService query, CancellationToken ct) =>
+{
+    var brief = await query.ExecuteAsync(id, ct);
+    return brief is null ? Results.NotFound() : Results.Ok(brief);
+});
+
 // ─── Dashboard ─────────────────────────────────────────────
 app.MapGet("/api/dashboard", async (GetDashboardQueryService query, CancellationToken ct) =>
 {
