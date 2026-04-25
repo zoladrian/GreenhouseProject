@@ -6,11 +6,13 @@ public sealed class GetSensorHealthQueryService
 {
     private readonly ISensorRepository _sensors;
     private readonly ISensorReadingRepository _readings;
+    private readonly IClock _clock;
 
-    public GetSensorHealthQueryService(ISensorRepository sensors, ISensorReadingRepository readings)
+    public GetSensorHealthQueryService(ISensorRepository sensors, ISensorReadingRepository readings, IClock clock)
     {
         _sensors = sensors;
         _readings = readings;
+        _clock = clock;
     }
 
     public async Task<IReadOnlyList<SensorHealthDto>> ExecuteAsync(CancellationToken cancellationToken)
@@ -19,10 +21,11 @@ public sealed class GetSensorHealthQueryService
         var sensorIds = sensors.Select(s => s.Id).ToList();
 
         var latestReadings = await _readings.GetLatestPerSensorAsync(sensorIds, cancellationToken);
+        var nowUtc = _clock.UtcNow;
         var last24h = await _readings.GetBySensorIdsAsync(
             sensorIds,
-            DateTime.UtcNow.AddHours(-24),
-            DateTime.UtcNow,
+            nowUtc.AddHours(-24),
+            nowUtc,
             cancellationToken);
 
         var countPerSensor = last24h

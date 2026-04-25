@@ -1,6 +1,7 @@
 using System.Globalization;
 using Greenhouse.Application.Abstractions;
 using Greenhouse.Application.Charts;
+using Greenhouse.Application.Time;
 using Microsoft.Extensions.Options;
 
 namespace Greenhouse.Application.Voice;
@@ -8,29 +9,38 @@ namespace Greenhouse.Application.Voice;
 public sealed class GetVoiceDailyReportQueryService
 {
     private readonly VoiceOptions _voice;
+    private readonly AnalyticsOptions _analytics;
     private readonly INawaRepository _nawy;
     private readonly ISensorRepository _sensors;
     private readonly ISensorReadingRepository _readings;
     private readonly GetWateringEventsQueryService _watering;
+    private readonly IClock _clock;
+    private readonly IGreenhouseTimeZoneResolver _tz;
 
     public GetVoiceDailyReportQueryService(
         IOptions<VoiceOptions> voiceOptions,
+        IOptions<AnalyticsOptions> analyticsOptions,
         INawaRepository nawy,
         ISensorRepository sensors,
         ISensorReadingRepository readings,
-        GetWateringEventsQueryService watering)
+        GetWateringEventsQueryService watering,
+        IClock clock,
+        IGreenhouseTimeZoneResolver tz)
     {
         _voice = voiceOptions.Value;
+        _analytics = analyticsOptions.Value;
         _nawy = nawy;
         _sensors = sensors;
         _readings = readings;
         _watering = watering;
+        _clock = clock;
+        _tz = tz;
     }
 
     public async Task<VoiceDailyReportDto> ExecuteAsync(CancellationToken cancellationToken)
     {
-        var tz = ResolveTimeZone(_voice.TimeZoneId);
-        var nowUtc = DateTime.UtcNow;
+        var tz = _tz.Resolve(_voice.TimeZoneId);
+        var nowUtc = _clock.UtcNow;
         var nowLocal = TimeZoneInfo.ConvertTimeFromUtc(nowUtc, tz);
         var dayStartLocal = new DateTime(nowLocal.Year, nowLocal.Month, nowLocal.Day, 0, 0, 0, DateTimeKind.Unspecified);
         var dayStartUtc = TimeZoneInfo.ConvertTimeToUtc(dayStartLocal, tz);
@@ -75,10 +85,10 @@ public sealed class GetVoiceDailyReportQueryService
             {
                 var last = await _watering.TryGetLastWateringEventAsync(
                     nawa.Id,
-                    nowUtc - VoiceWateringSpeech.DefaultWateringLookback,
+                    nowUtc - _analytics.WateringLookback,
                     nowUtc,
                     cancellationToken);
-                m = $"{m.TrimEnd()} {VoiceWateringSpeech.ForDrySinceWatering(last, nowUtc, tz, culture)}".Trim();
+                m = $"{m.TrimEnd()} {VoiceWateringSpeech.ForDrySinceWatering(last, nowUtc, tz, culture, _analytics.WateringLookback)}".Trim();
             }
 
             lines.Add(new NawaVoiceLineDto(order, nawa.Name, avgT, avgM, readings.Count, sensorIds.Count, m, t));
@@ -86,22 +96,5 @@ public sealed class GetVoiceDailyReportQueryService
 
         var leadin = string.IsNullOrWhiteSpace(_voice.GreetingLeadin) ? "Dzień dobry" : _voice.GreetingLeadin.Trim();
         return new VoiceDailyReportDto(leadin, timeStr, dateLong, lines);
-    }
-
-    private static TimeZoneInfo ResolveTimeZone(string timeZoneId)
-    {
-        if (string.IsNullOrWhiteSpace(timeZoneId))
-        {
-            return TimeZoneInfo.Utc;
-        }
-
-        try
-        {
-            return TimeZoneInfo.FindSystemTimeZoneById(timeZoneId.Trim());
-        }
-        catch
-        {
-            return TimeZoneInfo.Utc;
-        }
     }
 }

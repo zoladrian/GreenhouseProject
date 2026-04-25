@@ -54,7 +54,7 @@ public sealed class GetMoistureSeriesQueryService
         if (nawaId.HasValue)
         {
             var all = await _sensors.ListAsync(cancellationToken);
-            return all.Where(s => s.NawaId == nawaId.Value).Select(s => s.Id).ToList();
+            return new NawaChartSensorScope(all).ResolveMoistureEnvironmentAndGlobalWeatherSensorIds(nawaId.Value);
         }
 
         return [];

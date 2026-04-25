@@ -1,4 +1,4 @@
-using Greenhouse.Api.Mqtt;
+using Greenhouse.Infrastructure.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 

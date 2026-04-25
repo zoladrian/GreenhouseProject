@@ -1,14 +1,19 @@
 namespace Greenhouse.Domain.Analytics;
 
 /// <summary>
-/// Łączy wykryte skoki z wielu czujników w „epizody” i przypisuje heurystyczny rodzaj (podlanie vs deszcz).
+/// Łączy wykryte skoki z wielu czujników w „epizody” i przypisuje heurystyczny rodzaj
+/// (podlanie vs deszcz). Epizod = grupa zdarzeń, które wystąpiły blisko siebie w czasie
+/// (kotwica = początek epizodu, nowe zdarzenie dołącza jeśli mieści się w <paramref name="DefaultTimeLink"/>
+/// od początku epizodu — bez transitive chain linking, gdzie 0/40/80 min stałyby się
+/// jednym epizodem trwającym 80 min mimo limitu 45 min).
 /// </summary>
 public static class WateringEpisodeClusterer
 {
-    /// <summary>Maksymalny odstęp czasu między dwoma skokami, żeby uznać je za ten sam epizod (np. deszcz pada kilka minut).</summary>
+    /// <summary>Maksymalna długość epizodu (od pierwszego do ostatniego zdarzenia w klastrze).</summary>
     public static readonly TimeSpan DefaultTimeLink = TimeSpan.FromMinutes(45);
 
     /// <param name="perSensorEvents">Wykryte zdarzenia z identyfikatorem czujnika w jednej nawie.</param>
+    /// <param name="timeLink">Maksymalny dystans od kotwicy klastra (pierwszego zdarzenia w epizodzie).</param>
     public static IReadOnlyList<ClusteredWateringEpisode> Cluster(
         IReadOnlyList<(Guid SensorId, WateringEvent Event)> perSensorEvents,
         TimeSpan? timeLink = null)
@@ -18,39 +23,25 @@ public static class WateringEpisodeClusterer
             return [];
 
         var ordered = perSensorEvents.OrderBy(x => x.Event.DetectedAtUtc).ToList();
-        var n = ordered.Count;
-        var parent = Enumerable.Range(0, n).ToArray();
 
-        int Find(int i)
-        {
-            if (parent[i] != i)
-                parent[i] = Find(parent[i]);
-            return parent[i];
-        }
+        var clusters = new List<List<(Guid SensorId, WateringEvent Event)>>();
+        List<(Guid SensorId, WateringEvent Event)>? current = null;
+        DateTime? anchor = null;
 
-        void Union(int a, int b)
+        foreach (var item in ordered)
         {
-            var ra = Find(a);
-            var rb = Find(b);
-            if (ra != rb)
-                parent[rb] = ra;
-        }
-
-        for (var i = 0; i < n; i++)
-        {
-            for (var j = i + 1; j < n; j++)
+            if (current is null || anchor is null || item.Event.DetectedAtUtc - anchor.Value > link)
             {
-                var dt = ordered[j].Event.DetectedAtUtc - ordered[i].Event.DetectedAtUtc;
-                if (dt <= link)
-                    Union(i, j);
+                current = new List<(Guid, WateringEvent)>();
+                clusters.Add(current);
+                anchor = item.Event.DetectedAtUtc;
             }
+            current.Add(item);
         }
 
-        var episodes = new List<ClusteredWateringEpisode>();
-
-        foreach (var g in Enumerable.Range(0, n).GroupBy(Find))
+        var episodes = new List<ClusteredWateringEpisode>(clusters.Count);
+        foreach (var list in clusters)
         {
-            var list = g.Select(idx => ordered[idx]).ToList();
             var distinctSensors = list.Select(x => x.SensorId).Distinct().Count();
             var kind = distinctSensors >= 2
                 ? WateringEventInferredKind.LikelyRain
@@ -72,7 +63,7 @@ public static class WateringEpisodeClusterer
                 ContributingSensorCount: distinctSensors));
         }
 
-        return episodes.OrderBy(e => e.DetectedAtUtc).ToList();
+        return episodes;
     }
 }
 

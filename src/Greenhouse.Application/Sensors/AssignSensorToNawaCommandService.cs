@@ -1,4 +1,5 @@
 using Greenhouse.Application.Abstractions;
+using Greenhouse.Domain.Sensors;
 
 namespace Greenhouse.Application.Sensors;
 
@@ -26,6 +27,11 @@ public sealed class AssignSensorToNawaCommandService
 
         if (nawaId.HasValue)
         {
+            if (sensor.Kind == SensorKind.Weather)
+            {
+                return AssignSensorResult.WeatherSensorCannotBeAssignedToNawa;
+            }
+
             var nawa = await _nawy.GetByIdAsync(nawaId.Value, cancellationToken);
             if (nawa is null)
             {
@@ -48,5 +54,7 @@ public enum AssignSensorResult
 {
     Ok,
     SensorNotFound,
-    NawaNotFound
+    NawaNotFound,
+    /// <summary>Czujnik pogodowy jest zawsze globalny (<c>NawaId = null</c>); przypisanie do nawy jest zabronione.</summary>
+    WeatherSensorCannotBeAssignedToNawa
 }

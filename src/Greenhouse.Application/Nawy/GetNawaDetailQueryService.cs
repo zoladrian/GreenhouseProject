@@ -1,5 +1,6 @@
 using Greenhouse.Application.Abstractions;
 using Greenhouse.Application.Sensors;
+using Greenhouse.Domain.Sensors;
 
 namespace Greenhouse.Application.Nawy;
 
@@ -37,7 +38,7 @@ public sealed class GetNawaDetailQueryService
 
         var allSensors = await _sensors.ListAsync(cancellationToken);
         var nawaSensors = allSensors
-            .Where(s => s.NawaId == nawa.Id)
+            .Where(s => s.NawaId == nawa.Id && s.Kind != SensorKind.Weather)
             .OrderBy(s => s.ExternalId)
             .Select(s => new SensorListItemDto(s.Id, s.ExternalId, s.DisplayName, s.Kind.ToString(), s.NawaId, s.CreatedAtUtc))
             .ToList();

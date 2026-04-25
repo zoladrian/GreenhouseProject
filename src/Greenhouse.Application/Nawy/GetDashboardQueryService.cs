@@ -1,8 +1,10 @@
 using System.Globalization;
 using Greenhouse.Application.Abstractions;
 using Greenhouse.Application.Charts;
+using Greenhouse.Application.Time;
 using Greenhouse.Application.Voice;
 using Greenhouse.Domain.Nawy;
+using Greenhouse.Domain.Sensors;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -10,14 +12,15 @@ namespace Greenhouse.Application.Nawy;
 
 public sealed class GetDashboardQueryService
 {
-    private static readonly TimeSpan PostWateringWetMax = TimeSpan.FromMinutes(30);
-
     private readonly INawaRepository _nawy;
     private readonly ISensorRepository _sensors;
     private readonly ISensorReadingRepository _readings;
     private readonly ILogger<GetDashboardQueryService> _logger;
     private readonly IOptions<VoiceOptions> _voice;
+    private readonly AnalyticsOptions _analytics;
     private readonly GetWateringEventsQueryService _watering;
+    private readonly IClock _clock;
+    private readonly IGreenhouseTimeZoneResolver _tz;
 
     public GetDashboardQueryService(
         INawaRepository nawy,
@@ -25,24 +28,32 @@ public sealed class GetDashboardQueryService
         ISensorReadingRepository readings,
         ILogger<GetDashboardQueryService> logger,
         IOptions<VoiceOptions> voiceOptions,
-        GetWateringEventsQueryService watering)
+        IOptions<AnalyticsOptions> analyticsOptions,
+        GetWateringEventsQueryService watering,
+        IClock clock,
+        IGreenhouseTimeZoneResolver tz)
     {
         _nawy = nawy;
         _sensors = sensors;
         _readings = readings;
         _logger = logger;
         _voice = voiceOptions;
+        _analytics = analyticsOptions.Value;
         _watering = watering;
+        _clock = clock;
+        _tz = tz;
     }
 
     public async Task<IReadOnlyList<NawaSnapshotDto>> ExecuteAsync(CancellationToken cancellationToken)
     {
         var nawy = await _nawy.ListAsync(cancellationToken);
         var allSensors = await _sensors.ListAsync(cancellationToken);
-        var utcNow = DateTime.UtcNow;
+        var utcNow = _clock.UtcNow;
         var activeNawy = nawy.Where(n => n.IsActive).ToList();
         var activeNawaIds = activeNawy.Select(n => n.Id).ToHashSet();
-        var activeSensors = allSensors.Where(s => s.NawaId.HasValue && activeNawaIds.Contains(s.NawaId.Value)).ToList();
+        var activeSensors = allSensors
+            .Where(s => s.NawaId.HasValue && activeNawaIds.Contains(s.NawaId.Value) && s.Kind != SensorKind.Weather)
+            .ToList();
         var activeSensorIds = activeSensors.Select(s => s.Id).ToList();
         var latestForAllSensors = await _readings.GetLatestPerSensorAsync(activeSensorIds, cancellationToken);
         var latestBySensorId = latestForAllSensors
@@ -55,8 +66,10 @@ public sealed class GetDashboardQueryService
 
         foreach (var nawa in activeNawy)
         {
-            var nawaSensors = allSensors.Where(s => s.NawaId == nawa.Id).ToList();
-            var sensorIds = nawaSensors.Select(s => s.Id).ToList();
+            var nawaSoilSensors = allSensors
+                .Where(s => s.NawaId == nawa.Id && s.Kind != SensorKind.Weather)
+                .ToList();
+            var sensorIds = nawaSoilSensors.Select(s => s.Id).ToList();
 
             if (sensorIds.Count == 0)
             {
@@ -93,9 +106,7 @@ public sealed class GetDashboardQueryService
                 : (decimal?)null;
             var avgTemp = temperatures.Count > 0 ? Math.Round(temperatures.Average(), 2) : (decimal?)null;
             var lowestBattery = batteries.Count > 0 ? batteries.Min() : (int?)null;
-            var oldestReading = latestReadings.Count > 0
-                ? latestReadings.Min(r => r.ReceivedAtUtc)
-                : (DateTime?)null;
+            var oldestReading = SoilReadingFreshness.ResolveOldestSoilReading(latestReadings);
 
             var thresholds = nawa.GetMoistureThresholds();
             var status = OperatorStatusCalculator.Calculate(
@@ -126,9 +137,9 @@ public sealed class GetDashboardQueryService
                         sensorIdsWithMoisture,
                         thresholds.Max.Value,
                         utcNow,
-                        maxLookbackMinutes: 240);
+                        maxLookbackMinutes: _analytics.PostWateringWetMaxLookbackMinutes);
 
-                    if (wetMinutes > 0 && TimeSpan.FromMinutes(wetMinutes) < PostWateringWetMax)
+                    if (wetMinutes > 0 && wetMinutes < _analytics.PostWateringWetMinutesThreshold)
                         status = OperatorStatus.PostWatering;
                 }
             }
@@ -140,14 +151,14 @@ public sealed class GetDashboardQueryService
             {
                 var last = await _watering.TryGetLastWateringEventAsync(
                     nawa.Id,
-                    utcNow - VoiceWateringSpeech.DefaultWateringLookback,
+                    utcNow - _analytics.WateringLookback,
                     utcNow,
                     cancellationToken);
-                var tz = ResolveTimeZone(_voice.Value.TimeZoneId);
+                var tz = _tz.Resolve(_voice.Value.TimeZoneId);
                 var pl = CultureInfo.GetCultureInfo("pl-PL");
                 var note = status == OperatorStatus.PostWatering
-                    ? VoiceWateringSpeech.ForPostWateringContext(last, utcNow, tz, pl)
-                    : VoiceWateringSpeech.ForDrySinceWatering(last, utcNow, tz, pl);
+                    ? VoiceWateringSpeech.ForPostWateringContext(last, utcNow, tz, pl, _analytics.WateringLookback)
+                    : VoiceWateringSpeech.ForDrySinceWatering(last, utcNow, tz, pl, _analytics.WateringLookback);
                 wateringNote = note.Trim();
                 if (wateringNote.Length == 0)
                     wateringNote = null;
@@ -219,19 +230,4 @@ public sealed class GetDashboardQueryService
             null, null, utcNow,
             nawa.MoistureMin, nawa.MoistureMax, nawa.TemperatureMin, nawa.TemperatureMax,
             null);
-
-    private static TimeZoneInfo ResolveTimeZone(string timeZoneId)
-    {
-        if (string.IsNullOrWhiteSpace(timeZoneId))
-            return TimeZoneInfo.Utc;
-
-        try
-        {
-            return TimeZoneInfo.FindSystemTimeZoneById(timeZoneId.Trim());
-        }
-        catch
-        {
-            return TimeZoneInfo.Utc;
-        }
-    }
 }

@@ -2,7 +2,7 @@ import { api } from '../api/client';
 import { useFetch } from '../hooks/useFetch';
 
 export function HealthPage() {
-  const { data: health, loading } = useFetch(() => api.getSensorHealth());
+  const { data: health, loading } = useFetch((signal) => api.getSensorHealth(signal));
 
   if (loading) return <p>Ładowanie...</p>;
 

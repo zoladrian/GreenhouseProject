@@ -25,8 +25,13 @@ public static class DependencyInjection
             Directory.CreateDirectory(databaseDirectory);
         }
 
-        services.AddDbContext<GreenhouseDbContext>(db =>
-            db.UseSqlite($"Data Source={databasePath}"));
+        services.AddSingleton<SqlitePragmaConnectionInterceptor>();
+
+        services.AddDbContext<GreenhouseDbContext>((sp, db) =>
+        {
+            db.UseSqlite(SqliteConnectionFactory.BuildConnectionString(databasePath));
+            db.AddInterceptors(sp.GetRequiredService<SqlitePragmaConnectionInterceptor>());
+        });
 
         services.AddScoped<ISensorReadingRepository, EfSensorReadingRepository>();
         services.AddScoped<INawaRepository, EfNawaRepository>();

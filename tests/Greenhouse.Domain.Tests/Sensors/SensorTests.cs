@@ -44,4 +44,23 @@ public sealed class SensorTests
         var s = Sensor.Register("x");
         Assert.Throws<ArgumentException>(() => s.RekeyExternalId("  "));
     }
+
+    [Fact]
+    public void AssignToNawa_ShouldReject_WhenSensorKindIsWeather()
+    {
+        var s = Sensor.Register("rain-1", SensorKind.Weather);
+        var ex = Assert.Throws<InvalidOperationException>(() => s.AssignToNawa(Guid.NewGuid()));
+        Assert.Contains("global", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void UpdateKind_ToWeather_ShouldUnassignFromNawa()
+    {
+        var nawaId = Guid.NewGuid();
+        var s = Sensor.Register("plant", SensorKind.Soil);
+        s.AssignToNawa(nawaId);
+        s.UpdateKind(SensorKind.Weather);
+        Assert.Null(s.NawaId);
+        Assert.Equal(SensorKind.Weather, s.Kind);
+    }
 }

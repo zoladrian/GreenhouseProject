@@ -1,5 +1,6 @@
 using Greenhouse.Application.Abstractions;
 using Greenhouse.Application.Charts;
+using Greenhouse.Application.Time;
 using Greenhouse.Application.Ingestion;
 using Greenhouse.Application.Nawy;
 using Greenhouse.Application.Readings;
@@ -15,6 +16,8 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddApplication(this IServiceCollection services)
     {
+        services.AddSingleton<IClock, SystemClock>();
+        services.AddSingleton<IGreenhouseTimeZoneResolver, GreenhouseTimeZoneResolver>();
         services.AddSingleton<IMqttIngestTelemetry, MqttIngestTelemetry>();
         services.AddScoped<IMqttMessageIngestionService, MqttMessageIngestionService>();
         services.AddScoped<ISensorProvisioningService, SensorProvisioningService>();

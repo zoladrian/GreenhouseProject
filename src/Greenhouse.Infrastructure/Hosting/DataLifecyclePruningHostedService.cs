@@ -1,8 +1,11 @@
 using Greenhouse.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace Greenhouse.Api.Operations;
+namespace Greenhouse.Infrastructure.Hosting;
 
 public sealed class DataLifecyclePruningHostedService : BackgroundService
 {

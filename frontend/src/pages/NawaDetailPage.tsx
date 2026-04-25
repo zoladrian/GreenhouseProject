@@ -6,9 +6,10 @@ import { MoistureChart } from '../components/MoistureChart';
 import { TemperatureChart } from '../components/TemperatureChart';
 import { BatteryChart } from '../components/BatteryChart';
 import { WeatherChart, type WeatherMetricKey } from '../components/WeatherChart';
-import { useEffect, useMemo, useState, type CSSProperties } from 'react';
+import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { NawyPageBackdrop } from '../components/NawyPageBackdrop';
+import { formatDateTimeFullPl, keyFromTimestampAndLabel } from '../utils/formatPl';
 
 type RangePreset = '1h' | '6h' | '24h' | '7d' | '30d' | 'custom';
 
@@ -28,7 +29,10 @@ function toDatetimeLocalValue(d: Date) {
 export function NawaDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { data: detail, loading, refetch } = useFetch(() => api.getNawaDetail(id!), [id]);
+  const { data: detail, loading, error: detailError, refetch: refetchDetail } = useFetch(
+    (signal) => api.getNawaDetail(id!, signal),
+    [id],
+  );
 
   const [rangePreset, setRangePreset] = useState<RangePreset>('24h');
   const [customFrom, setCustomFrom] = useState('');
@@ -52,10 +56,42 @@ export function NawaDetailPage() {
     return { from: new Date(now - h * 3600_000).toISOString(), to: new Date(now).toISOString() };
   }, [rangePreset, customFrom, customTo]);
 
-  const { data: points } = useFetch(() => api.getMoistureSeries(`nawaId=${id}&from=${from}&to=${to}`), [id, from, to]);
-  const { data: weatherPoints } = useFetch(() => api.getWeatherSeries(`nawaId=${id}&from=${from}&to=${to}`), [id, from, to]);
-  const { data: wateringEvents } = useFetch(() => api.getWateringEvents(id!, from, to), [id, from, to]);
-  const { data: dryingRates } = useFetch(() => api.getDryingRates(id!, from, to), [id, from, to]);
+  const { data: points, error: pointsError, refetch: refetchPoints } = useFetch(
+    (signal) => api.getMoistureSeries(`nawaId=${id}&from=${from}&to=${to}`, signal),
+    [id, from, to],
+  );
+  const { data: weatherPoints, error: weatherError, refetch: refetchWeather } = useFetch(
+    (signal) => api.getWeatherSeries(`nawaId=${id}&from=${from}&to=${to}`, signal),
+    [id, from, to],
+  );
+  const { data: wateringEvents, error: wateringError, refetch: refetchWatering } = useFetch(
+    (signal) => api.getWateringEvents(id!, from, to, signal),
+    [id, from, to],
+  );
+  const { data: dryingRates, error: dryingError, refetch: refetchDrying } = useFetch(
+    (signal) => api.getDryingRates(id!, from, to, signal),
+    [id, from, to],
+  );
+
+  const refetchAll = useCallback(() => {
+    refetchDetail();
+    refetchPoints();
+    refetchWeather();
+    refetchWatering();
+    refetchDrying();
+  }, [refetchDetail, refetchPoints, refetchWeather, refetchWatering, refetchDrying]);
+
+  const fetchErrors = useMemo(
+    () =>
+      [
+        detailError ? `Szczegóły nawy: ${detailError}` : null,
+        pointsError ? `Wilgotność/temperatura/bateria: ${pointsError}` : null,
+        weatherError ? `Pogoda: ${weatherError}` : null,
+        wateringError ? `Skoki wilgotności: ${wateringError}` : null,
+        dryingError ? `Tempo wysychania: ${dryingError}` : null,
+      ].filter((x): x is string => x !== null),
+    [detailError, pointsError, weatherError, wateringError, dryingError],
+  );
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -137,7 +173,7 @@ export function NawaDetailPage() {
         temperatureMax: tMax,
       });
       setSaveMsg('Zapisano.');
-      await refetch();
+      refetchDetail();
     } catch (e) {
       setSaveMsg(e instanceof Error ? e.message : 'Błąd zapisu');
     } finally {
@@ -178,6 +214,47 @@ export function NawaDetailPage() {
         {detail.plantNote && <p className="nawa-detail-sub">🌿 {detail.plantNote}</p>}
         {detail.description && <p className="nawa-detail-desc">{detail.description}</p>}
       </header>
+
+      {fetchErrors.length > 0 && (
+        <div
+          role="alert"
+          aria-live="polite"
+          data-testid="nawa-detail-error-banner"
+          style={{
+            background: '#fef2f2',
+            border: '1px solid #fecaca',
+            color: '#991b1b',
+            padding: '10px 12px',
+            borderRadius: 8,
+            marginBottom: 12,
+            fontSize: 13,
+            lineHeight: 1.45,
+          }}
+        >
+          <strong style={{ display: 'block', marginBottom: 4 }}>Część danych nie wczytała się.</strong>
+          <ul style={{ margin: 0, paddingLeft: 18 }}>
+            {fetchErrors.map((m) => (
+              <li key={m}>{m}</li>
+            ))}
+          </ul>
+          <button
+            type="button"
+            onClick={() => refetchAll()}
+            style={{
+              marginTop: 8,
+              background: '#991b1b',
+              color: '#fff',
+              border: 'none',
+              borderRadius: 6,
+              padding: '6px 10px',
+              fontSize: 12,
+              cursor: 'pointer',
+            }}
+          >
+            Spróbuj ponownie
+          </button>
+        </div>
+      )}
 
       <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 16 }}>
         <InfoCard
@@ -436,8 +513,11 @@ export function NawaDetailPage() {
       {dryingRates && dryingRates.length > 0 && (
         <div style={{ background: '#fff', borderRadius: 12, padding: 16, marginTop: 12, boxShadow: '0 1px 3px rgba(0,0,0,.08)' }}>
           <h3 style={{ fontSize: 14, marginBottom: 8 }}>Tempo wysychania</h3>
-          {dryingRates.map((r, i) => (
-            <div key={i} style={{ fontSize: 13, color: '#475569' }}>
+          {dryingRates.map((r) => (
+            <div
+              key={`${r.sensorId ?? r.sensorIdentifier}__${r.windowStart}__${r.windowEnd}`}
+              style={{ fontSize: 13, color: '#475569' }}
+            >
               {r.sensorIdentifier}: <strong>{r.percentPerHour} %/h</strong>
             </div>
           ))}
@@ -447,7 +527,7 @@ export function NawaDetailPage() {
       {wateringEvents && wateringEvents.length > 0 && (
         <div className="nawa-glass" style={{ borderRadius: 12, padding: 16, marginTop: 12 }}>
           <h3 style={{ fontSize: 14, marginBottom: 8 }}>Skoki wilgotności (podlanie / deszcz?)</h3>
-          {wateringEvents.map((e, i) => {
+          {wateringEvents.map((e) => {
             const kindLabel =
               e.inferredKind === 'likelyRain'
                 ? 'Deszcz?'
@@ -457,10 +537,13 @@ export function NawaDetailPage() {
             const kindColor =
               e.inferredKind === 'likelyRain' ? '#0369a1' : e.inferredKind === 'likelyManual' ? '#15803d' : '#b45309';
             return (
-              <div key={i} style={{ fontSize: 13, color: '#475569', marginBottom: 6 }}>
+              <div
+                key={keyFromTimestampAndLabel(e.detectedAtUtc, `watering-${e.inferredKind}`)}
+                style={{ fontSize: 13, color: '#475569', marginBottom: 6 }}
+              >
                 <span style={{ fontWeight: 600, color: kindColor }}>{kindLabel}</span>
                 {' · '}
-                {new Date(e.detectedAtUtc).toLocaleString('pl-PL')}
+                {formatDateTimeFullPl(e.detectedAtUtc)}
                 {' · '}
                 {e.moistureBefore}% → {e.moistureAfter}% (+{e.deltaMoisture}%)
                 {e.contributingSensorCount > 1 && (

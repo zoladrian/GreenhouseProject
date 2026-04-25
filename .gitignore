@@ -46,6 +46,8 @@ frontend/npm-debug.log*
 frontend/yarn-debug.log*
 frontend/yarn-error.log*
 frontend/pnpm-debug.log*
+frontend/test-results/
+frontend/playwright-report/
 
 # --- Docker / compose overrides (local only) ---
 docker-compose.override.yml

@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 
 /** Dzieli tekst na krótsze wypowiedzi — lepsze pauzy niż jedno długie zdanie (Web Speech bez SSML). */
 function speakPolishChunks(fullText: string) {
@@ -41,27 +41,41 @@ export function speakPolish(text: string) {
   }
 }
 
-export function useTts() {
+export interface TtsHandle {
+  enabled: boolean;
+  setEnabled: (v: boolean) => void;
+  /** Wypowiedź ograniczona cooldownem; nie zadziała przy `enabled=false`. */
+  speak: (text: string) => void;
+  /** Wymuszona wypowiedź (klik użytkownika) — bez cooldownu, ignoruje `enabled`. */
+  speakImmediate: (text: string) => void;
+}
+
+export function useTts(): TtsHandle {
   const [enabled, setEnabled] = useState(false);
   const lastSpoke = useRef(0);
   const cooldownMs = 30_000;
+  // Trzymamy enabled w refie, żeby `speak` mogło być stabilne (deps tylko `[]`).
+  // Inaczej każdy konsument, który włoży obiekt `tts` do deps, re-firowałby effect
+  // przy każdym renderze rodzica.
+  const enabledRef = useRef(enabled);
+  enabledRef.current = enabled;
 
-  /** Wywołaj z obsługi zdarzenia użytkownika (np. klik) — wymagane na części mobilnych Safari. */
   const speakImmediate = useCallback((text: string) => {
     speakPolish(text);
   }, []);
 
-  const speak = useCallback(
-    (text: string) => {
-      if (!enabled) return;
-      if (!('speechSynthesis' in window)) return;
-      const now = Date.now();
-      if (now - lastSpoke.current < cooldownMs) return;
-      lastSpoke.current = now;
-      speakPolish(text);
-    },
-    [enabled],
-  );
+  const speak = useCallback((text: string) => {
+    if (!enabledRef.current) return;
+    if (!('speechSynthesis' in window)) return;
+    const now = Date.now();
+    if (now - lastSpoke.current < cooldownMs) return;
+    lastSpoke.current = now;
+    speakPolish(text);
+  }, []);
 
-  return { enabled, setEnabled, speak, speakImmediate };
+  // Stabilna referencja: zmiania tylko gdy `enabled` się zmieni (co w UI dzieje się rzadko).
+  return useMemo<TtsHandle>(
+    () => ({ enabled, setEnabled, speak, speakImmediate }),
+    [enabled, speak, speakImmediate],
+  );
 }

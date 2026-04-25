@@ -83,6 +83,12 @@ public sealed class Sensor
             throw new ArgumentException("Identyfikator nawy jest nieprawidłowy.", nameof(nawaId));
         }
 
+        if (Kind == SensorKind.Weather)
+        {
+            throw new InvalidOperationException(
+                "Czujnik pogodowy (deszcz / jasność) jest globalny dla całej instalacji i nie może być przypisany do pojedynczej nawy.");
+        }
+
         NawaId = nawaId;
     }
 
@@ -95,6 +101,10 @@ public sealed class Sensor
     {
         if (kind == SensorKind.Unknown)
             return;
+
         Kind = kind;
+
+        if (kind == SensorKind.Weather)
+            UnassignFromNawa();
     }
 }

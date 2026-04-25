@@ -11,6 +11,12 @@ public static class OperatorStatusCalculator
     /// <summary>Domyślny próg rozstrzału (% pkt.) do statusu <see cref="OperatorStatus.UnevenMoisture"/>.</summary>
     public const decimal DefaultSpreadAlertPercent = 15m;
 
+    /// <summary>Oblicza status operacyjny nawy na podstawie ostatnich odczytów wilgotności gleby.</summary>
+    /// <param name="assignedSensorCount">Liczba czujników glebowych przypisanych do nawy (bez globalnych czujników pogodowych).</param>
+    /// <param name="oldestReadingUtc">
+    /// Najstarszy znacznik czasu wśród <b>ostatnich odczytów z wilgotnością gleby</b> użytych do min/max
+    /// (nie uwzględnia odczytów wyłącznie baterii ani czujników bez <c>SoilMoisture</c>).
+    /// </param>
     public static OperatorStatus Calculate(
         int assignedSensorCount,
         int moistureReadingCount,

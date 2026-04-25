@@ -48,7 +48,8 @@ public sealed class AnalyticsIntegrationTests : IDisposable
             CancellationToken.None);
 
         Assert.Single(events);
-        Assert.Equal(26m, events[0].DeltaMoisture);
+        // 20 → 22 → 48 → 46. Sliding window mierzy od lokalnego minimum (20) do szczytu (48).
+        Assert.Equal(28m, events[0].DeltaMoisture);
         Assert.Equal("likelyManual", events[0].InferredKind);
         Assert.Equal(1, events[0].ContributingSensorCount);
     }

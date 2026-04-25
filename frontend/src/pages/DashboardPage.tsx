@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api, type NawaSnapshot } from '../api/client';
 import { useFetch } from '../hooks/useFetch';
@@ -10,7 +10,7 @@ import { DashboardHero } from '../components/DashboardHero';
 import { DashboardPageBackdrop } from '../components/DashboardPageBackdrop';
 
 export function DashboardPage() {
-  const { data, loading, refetch } = useFetch(() => api.getDashboard());
+  const { data, loading, refetch } = useFetch((signal) => api.getDashboard(signal));
   const navigate = useNavigate();
   const tts = useTts();
   const [voiceReportLoading, setVoiceReportLoading] = useState(false);
@@ -21,35 +21,54 @@ export function DashboardPage() {
     return () => clearInterval(interval);
   }, [refetch]);
 
+  // Zbiory naw w stanach alarmowych. `key` jest stabilną reprezentacją zbioru —
+  // efekt głosowy odpala się TYLKO gdy zbiór się rzeczywiście zmieni (a nie przy każdym 30 s pollu).
+  const dryNawy = useMemo(() => data?.filter((s) => s.status === 2) ?? [], [data]);
+  const conflictNawy = useMemo(() => data?.filter((s) => s.status === 4) ?? [], [data]);
+  const unevenNawy = useMemo(() => data?.filter((s) => s.status === 5) ?? [], [data]);
+  const dryKey = useMemo(() => keyOf(dryNawy), [dryNawy]);
+  const conflictKey = useMemo(() => keyOf(conflictNawy), [conflictNawy]);
+  const unevenKey = useMemo(() => keyOf(unevenNawy), [unevenNawy]);
+
+  // Refy do najnowszych snapshotów + stabilnego `tts.speak`, żeby effect nie zależał
+  // od ich identyczności obiektowej (re-render rodzica nie powinien re-firować mowy).
+  const dryRef = useRef(dryNawy);
+  dryRef.current = dryNawy;
+  const conflictRef = useRef(conflictNawy);
+  conflictRef.current = conflictNawy;
+  const unevenRef = useRef(unevenNawy);
+  unevenRef.current = unevenNawy;
+  const speakRef = useRef(tts.speak);
+  speakRef.current = tts.speak;
+
   useEffect(() => {
-    if (!data) return;
-    const dry = data.filter((s) => s.status === 2);
-    if (dry.length > 0) {
-      const intro =
-        dry.length === 1 ? 'Uwaga, potrzebne podlanie w nawie.' : 'Uwaga, potrzebne podlanie w kilku nawach.';
-      const parts = dry.map((s) => {
-        const note = s.wateringSpeechNote?.trim();
-        return note ? `${s.nawaName}. ${note}` : s.nawaName;
-      });
-      tts.speak(`${intro} ${parts.join(' Następna nawa: ')}`);
-    }
-    const conflict = data.filter((s) => s.status === 4);
-    if (conflict.length > 0) {
-      const parts = conflict.map((s) => {
-        const note = s.wateringSpeechNote?.trim();
-        return note ? `${s.nawaName}. ${note}` : s.nawaName;
-      });
-      tts.speak(
-        `Uwaga, sprzeczne odczyty wilgotności w ${conflict.length} nawach: ${parts.join(' Następna nawa: ')}. Sprawdź czujniki.`,
-      );
-    }
-    const uneven = data.filter((s) => s.status === 5);
-    if (uneven.length > 0) {
-      tts.speak(
-        `Informacja: duży rozstrzał między czujnikami w: ${uneven.map((s) => s.nawaName).join(', ')}.`,
-      );
-    }
-  }, [data, tts]);
+    if (dryKey === '') return;
+    const dry = dryRef.current;
+    const intro = dry.length === 1 ? 'Uwaga, potrzebne podlanie w nawie.' : 'Uwaga, potrzebne podlanie w kilku nawach.';
+    const parts = dry.map((s) => {
+      const note = s.wateringSpeechNote?.trim();
+      return note ? `${s.nawaName}. ${note}` : s.nawaName;
+    });
+    speakRef.current(`${intro} ${parts.join(' Następna nawa: ')}`);
+  }, [dryKey]);
+
+  useEffect(() => {
+    if (conflictKey === '') return;
+    const conflict = conflictRef.current;
+    const parts = conflict.map((s) => {
+      const note = s.wateringSpeechNote?.trim();
+      return note ? `${s.nawaName}. ${note}` : s.nawaName;
+    });
+    speakRef.current(
+      `Uwaga, sprzeczne odczyty wilgotności w ${conflict.length} nawach: ${parts.join(' Następna nawa: ')}. Sprawdź czujniki.`,
+    );
+  }, [conflictKey]);
+
+  useEffect(() => {
+    if (unevenKey === '') return;
+    const uneven = unevenRef.current;
+    speakRef.current(`Informacja: duży rozstrzał między czujnikami w: ${uneven.map((s) => s.nawaName).join(', ')}.`);
+  }, [unevenKey]);
 
   if (loading) {
     return (
@@ -158,6 +177,11 @@ export function DashboardPage() {
       </div>
     </div>
   );
+}
+
+/** Stabilny klucz zbioru — kolejność nieistotna (sortujemy ID), liczba też nieważna. */
+function keyOf(snaps: NawaSnapshot[]): string {
+  return [...snaps].map((s) => s.nawaId).sort().join('|');
 }
 
 function formatSnapshotRanges(snap: NawaSnapshot): string | null {

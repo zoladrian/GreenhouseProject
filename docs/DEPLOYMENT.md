@@ -143,7 +143,7 @@ Obecnie używane jest `EnsureCreated`. Po zmianie encji usuń plik `greenhouse.d
 | `Mqtt__TopicFilter` | Filtr subskrypcji (domyślnie `zigbee2mqtt/#`) |
 | `ApiSecurity__RequireForMutations` | Wymusza nagłówek API key na `POST/PUT/DELETE` |
 | `ApiSecurity__HeaderName` | Nazwa nagłówka z kluczem (domyślnie `X-Api-Key`) |
-| `ApiSecurity__ApiKey` | Klucz API dla mutacji (ustaw własny w produkcji) |
+| `ApiSecurity__ApiKey` | Klucz API dla mutacji. **WYMAGANY** gdy `RequireForMutations=true`. Min. 16 znaków, nie może być placeholderem (`change-me`, `dev-only`, `secret`, `api-key`, `your-key`, `todo`). Brak / placeholder ⇒ aplikacja **nie wystartuje** (`OptionsValidationException`). Generuj `openssl rand -hex 24` i podaj przez `.env` (zmienna `GREENHOUSE_API_KEY`). |
 | `Charts__MaxPointsPerSeries` | Górny limit punktów w odpowiedziach endpointów wykresowych |
 | `DataLifecycle__EnablePruning` | Włącza okresowe czyszczenie starych odczytów |
 | `DataLifecycle__KeepReadingsDays` | Ile dni historii odczytów trzymać |

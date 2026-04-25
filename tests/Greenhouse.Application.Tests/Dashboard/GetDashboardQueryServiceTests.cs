@@ -1,6 +1,7 @@
 using Greenhouse.Application.Abstractions;
 using Greenhouse.Application.Charts;
 using Greenhouse.Application.Nawy;
+using Greenhouse.Application.Time;
 using Greenhouse.Application.Voice;
 using Greenhouse.Domain.Nawy;
 using Greenhouse.Domain.SensorReadings;
@@ -12,20 +13,32 @@ namespace Greenhouse.Application.Tests.Dashboard;
 
 public sealed class GetDashboardQueryServiceTests
 {
+    private sealed class FakeClock : IClock
+    {
+        public DateTime UtcNow { get; set; } = new(2026, 4, 24, 12, 0, 0, DateTimeKind.Utc);
+    }
+
     private static GetDashboardQueryService CreateSut(
         InMemoryNawaRepo nawaRepo,
         InMemorySensorRepo sensorRepo,
-        InMemoryReadingRepo readingRepo)
+        InMemoryReadingRepo readingRepo,
+        FakeClock? clock = null)
     {
         var voice = Options.Create(new VoiceOptions());
+        var analytics = Options.Create(new AnalyticsOptions());
         var watering = new GetWateringEventsQueryService(sensorRepo, readingRepo);
+        var c = clock ?? new FakeClock();
+        var tz = new GreenhouseTimeZoneResolver(NullLogger<GreenhouseTimeZoneResolver>.Instance);
         return new GetDashboardQueryService(
             nawaRepo,
             sensorRepo,
             readingRepo,
             NullLogger<GetDashboardQueryService>.Instance,
             voice,
-            watering);
+            analytics,
+            watering,
+            c,
+            tz);
     }
 
     [Fact]
@@ -109,6 +122,78 @@ public sealed class GetDashboardQueryServiceTests
         Assert.Single(result);
         Assert.Equal(OperatorStatus.Conflict, result[0].Status);
         Assert.Equal(75m, result[0].MoistureSpread);
+    }
+
+    [Fact]
+    public async Task Dashboard_Staleness_UsesOldestSoilReading_NotBatteryOnlyLatest()
+    {
+        var clock = new FakeClock
+        {
+            UtcNow = new DateTime(2026, 4, 24, 14, 0, 0, DateTimeKind.Utc),
+        };
+        var nawaRepo = new InMemoryNawaRepo();
+        var sensorRepo = new InMemorySensorRepo();
+        var readingRepo = new InMemoryReadingRepo();
+
+        var nawa = Nawa.Create("Nawa Stale", null);
+        await nawaRepo.AddAsync(nawa, CancellationToken.None);
+
+        var soil = Sensor.Register("soil-a", SensorKind.Soil);
+        soil.AssignToNawa(nawa.Id);
+        await sensorRepo.AddAsync(soil, CancellationToken.None);
+
+        readingRepo.Add(SensorReading.Create(
+            "soil-a",
+            clock.UtcNow.AddHours(-2),
+            "t",
+            "{}",
+            50m,
+            21m,
+            90,
+            100,
+            soil.Id));
+
+        var sut = CreateSut(nawaRepo, sensorRepo, readingRepo, clock);
+        var result = await sut.ExecuteAsync(CancellationToken.None);
+
+        Assert.Single(result);
+        Assert.Equal(OperatorStatus.NoData, result[0].Status);
+    }
+
+    [Fact]
+    public async Task Dashboard_WhenMoistureFresh_ReturnsOk()
+    {
+        var clock = new FakeClock
+        {
+            UtcNow = new DateTime(2026, 4, 24, 14, 0, 0, DateTimeKind.Utc),
+        };
+        var nawaRepo = new InMemoryNawaRepo();
+        var sensorRepo = new InMemorySensorRepo();
+        var readingRepo = new InMemoryReadingRepo();
+
+        var nawa = Nawa.Create("Nawa Ok", null);
+        await nawaRepo.AddAsync(nawa, CancellationToken.None);
+
+        var soil = Sensor.Register("soil-b", SensorKind.Soil);
+        soil.AssignToNawa(nawa.Id);
+        await sensorRepo.AddAsync(soil, CancellationToken.None);
+
+        readingRepo.Add(SensorReading.Create(
+            "soil-b",
+            clock.UtcNow.AddMinutes(-10),
+            "t",
+            "{}",
+            52m,
+            21m,
+            90,
+            100,
+            soil.Id));
+
+        var sut = CreateSut(nawaRepo, sensorRepo, readingRepo, clock);
+        var result = await sut.ExecuteAsync(CancellationToken.None);
+
+        Assert.Single(result);
+        Assert.Equal(OperatorStatus.Ok, result[0].Status);
     }
 
     private sealed class InMemoryNawaRepo : INawaRepository

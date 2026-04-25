@@ -2,8 +2,6 @@ using Greenhouse.Api;
 using Greenhouse.Api.Contracts;
 using Greenhouse.Api.Charts;
 using Greenhouse.Api.Cors;
-using Greenhouse.Api.Mqtt;
-using Greenhouse.Api.Operations;
 using Greenhouse.Api.Security;
 using Greenhouse.Application;
 using Greenhouse.Application.Abstractions;
@@ -14,6 +12,7 @@ using Greenhouse.Application.Sensors;
 using Greenhouse.Application.Voice;
 using Greenhouse.Application.Weather;
 using Greenhouse.Infrastructure;
+using Greenhouse.Infrastructure.Hosting;
 using Greenhouse.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -28,21 +27,21 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
-builder.Services.AddHostedService<SensorDuplicateCleanupHostedService>();
-builder.Services.AddHostedService<DataLifecyclePruningHostedService>();
+builder.Services.AddGreenhouseHostedServices(builder.Configuration, GreenhouseHostMode.Api);
 builder.Services.AddOptions<VoiceOptions>()
     .Bind(builder.Configuration.GetSection(VoiceOptions.SectionName))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+builder.Services.AddOptions<AnalyticsOptions>()
+    .Bind(builder.Configuration.GetSection(AnalyticsOptions.SectionName))
     .ValidateDataAnnotations()
     .ValidateOnStart();
 builder.Services.AddOptions<WeatherInterpretationOptions>()
     .Bind(builder.Configuration.GetSection(WeatherInterpretationOptions.SectionName))
     .ValidateOnStart();
+builder.Services.AddSingleton<IValidateOptions<ApiKeyOptions>, ApiKeyOptionsValidator>();
 builder.Services.AddOptions<ApiKeyOptions>()
     .Bind(builder.Configuration.GetSection(ApiKeyOptions.SectionName))
-    .ValidateDataAnnotations()
-    .ValidateOnStart();
-builder.Services.AddOptions<MqttOptions>()
-    .Bind(builder.Configuration.GetSection(MqttOptions.SectionName))
     .ValidateDataAnnotations()
     .ValidateOnStart();
 builder.Services.AddOptions<CorsOptions>()
@@ -53,16 +52,6 @@ builder.Services.AddOptions<ChartQueryOptions>()
     .ValidateDataAnnotations()
     .ValidateOnStart();
 builder.Services.AddScoped<ApiKeyMutationEndpointFilter>();
-builder.Services.AddOptions<DataLifecycleOptions>()
-    .Bind(builder.Configuration.GetSection(DataLifecycleOptions.SectionName))
-    .ValidateDataAnnotations()
-    .ValidateOnStart();
-
-var mqttOpts = builder.Configuration.GetSection(MqttOptions.SectionName).Get<MqttOptions>() ?? new MqttOptions();
-if (mqttOpts.Enabled && mqttOpts.EnableInApiHost)
-{
-    builder.Services.AddHostedService<MqttIngestionHostedService>();
-}
 
 builder.Services.AddCors(options =>
 {
@@ -215,6 +204,10 @@ app.MapPut("/api/sensor/{sensorId:guid}/nawa", async (Guid sensorId, AssignSenso
         AssignSensorResult.Ok => Results.NoContent(),
         AssignSensorResult.SensorNotFound => Results.NotFound(new { error = "Nie znaleziono czujnika." }),
         AssignSensorResult.NawaNotFound => Results.NotFound(new { error = "Nie znaleziono nawy." }),
+        AssignSensorResult.WeatherSensorCannotBeAssignedToNawa => Results.BadRequest(new
+        {
+            error = "Czujnik pogodowy jest globalny dla całej instalacji i nie może być przypisany do nawy."
+        }),
         _ => Results.Problem()
     };
 }).AddEndpointFilter<ApiKeyMutationEndpointFilter>();
@@ -245,7 +238,12 @@ app.MapGet("/api/chart/moisture", async (
     var fromUtc = from ?? DateTime.UtcNow.AddHours(-24);
     var toUtc = to ?? DateTime.UtcNow;
     var data = await query.ExecuteAsync(nawaId, sensorId, fromUtc, toUtc, ct);
-    return Results.Ok(SampleMax(data, chartOptions.Value.MaxPointsPerSeries));
+    var decimated = SeriesDecimator.SampleMaxPerSeries(
+        data,
+        p => p.SensorId.HasValue ? (object)p.SensorId.Value : $"topic:{p.SensorIdentifier}",
+        p => p.UtcTime,
+        chartOptions.Value.MaxPointsPerSeries);
+    return Results.Ok(decimated);
 });
 
 app.MapGet("/api/chart/weather", async (
@@ -255,7 +253,12 @@ app.MapGet("/api/chart/weather", async (
     var fromUtc = from ?? DateTime.UtcNow.AddHours(-24);
     var toUtc = to ?? DateTime.UtcNow;
     var data = await query.ExecuteAsync(nawaId, sensorId, fromUtc, toUtc, ct);
-    return Results.Ok(SampleMax(data, chartOptions.Value.MaxPointsPerSeries));
+    var decimated = SeriesDecimator.SampleMaxPerSeries(
+        data,
+        p => p.SensorId.HasValue ? (object)p.SensorId.Value : $"topic:{p.SensorIdentifier}",
+        p => p.UtcTime,
+        chartOptions.Value.MaxPointsPerSeries);
+    return Results.Ok(decimated);
 });
 
 app.MapGet("/api/chart/watering-events", async (
@@ -278,26 +281,15 @@ app.MapGet("/api/chart/drying-rate", async (
     return Results.Ok(rates);
 });
 
+// Każdy GET pod /api/* który nie trafił do żadnego endpointu MUSI zwrócić JSON 404,
+// inaczej `MapFallbackToFile("index.html")` odda tu HTML SPA (200 OK z text/html),
+// a frontend dostaje JSON.parse na ciągu '<!DOCTYPE html>...'.
+app.MapFallback("/api/{**any}", () => Results.Json(
+    new { error = "Endpoint API nie istnieje." },
+    statusCode: StatusCodes.Status404NotFound));
+
 app.MapFallbackToFile("index.html");
 
 app.Run();
-
-static IReadOnlyList<T> SampleMax<T>(IReadOnlyList<T> source, int maxPoints)
-{
-    if (source.Count <= maxPoints || maxPoints <= 0)
-        return source;
-
-    var step = (double)source.Count / maxPoints;
-    var output = new List<T>(maxPoints);
-    for (var i = 0; i < maxPoints; i++)
-    {
-        var idx = (int)Math.Floor(i * step);
-        if (idx >= source.Count)
-            idx = source.Count - 1;
-        output.Add(source[idx]);
-    }
-
-    return output;
-}
 
 public partial class Program;

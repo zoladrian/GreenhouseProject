@@ -51,6 +51,82 @@ public sealed class AssignSensorToNawaCommandServiceTests
         Assert.Null(sensor.NawaId);
     }
 
+    [Fact]
+    public async Task ExecuteAsync_ShouldReject_AssigningWeatherSensorToNawa()
+    {
+        var nawa = Nawa.Create("N1", null);
+        var sensor = Sensor.Register("rain", SensorKind.Weather);
+        var nawaRepo = new FakeNawaRepo(nawa);
+        var sensorRepo = new FakeSensorRepo(sensor);
+        var sut = new AssignSensorToNawaCommandService(sensorRepo, nawaRepo);
+
+        var result = await sut.ExecuteAsync(sensor.Id, nawa.Id, CancellationToken.None);
+
+        Assert.Equal(AssignSensorResult.WeatherSensorCannotBeAssignedToNawa, result);
+        Assert.Null(sensor.NawaId);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldReturnNawaNotFound_WhenNawaIdDoesNotExist()
+    {
+        // Operator pomylił ID nawy lub usunięto nawę między żądaniami: must NOT silently succeed.
+        var sensor = Sensor.Register("ext-1");
+        var nawaRepo = new FakeNawaRepo();
+        var sensorRepo = new FakeSensorRepo(sensor);
+        var sut = new AssignSensorToNawaCommandService(sensorRepo, nawaRepo);
+
+        var result = await sut.ExecuteAsync(sensor.Id, Guid.NewGuid(), CancellationToken.None);
+
+        Assert.Equal(AssignSensorResult.NawaNotFound, result);
+        Assert.Null(sensor.NawaId);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldReassign_WhenSensorAlreadyAssignedToOtherNawa()
+    {
+        // Re-przypisanie czujnika z nawy A do nawy B nie powinno wymagać uprzedniego unassign.
+        var nawaA = Nawa.Create("A", null);
+        var nawaB = Nawa.Create("B", null);
+        var sensor = Sensor.Register("ext-1");
+        sensor.AssignToNawa(nawaA.Id);
+        var nawaRepo = new FakeNawaRepo(nawaA, nawaB);
+        var sensorRepo = new FakeSensorRepo(sensor);
+        var sut = new AssignSensorToNawaCommandService(sensorRepo, nawaRepo);
+
+        var result = await sut.ExecuteAsync(sensor.Id, nawaB.Id, CancellationToken.None);
+
+        Assert.Equal(AssignSensorResult.Ok, result);
+        Assert.Equal(nawaB.Id, sensor.NawaId);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldUnassign_EvenWhenSensorAlreadyUnassigned()
+    {
+        // Idempotentne odpięcie: brak błędu, brak zmiany stanu.
+        var sensor = Sensor.Register("ext-1");
+        var nawaRepo = new FakeNawaRepo();
+        var sensorRepo = new FakeSensorRepo(sensor);
+        var sut = new AssignSensorToNawaCommandService(sensorRepo, nawaRepo);
+
+        var result = await sut.ExecuteAsync(sensor.Id, null, CancellationToken.None);
+
+        Assert.Equal(AssignSensorResult.Ok, result);
+        Assert.Null(sensor.NawaId);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldReturnSensorNotFound_BeforeCheckingNawa()
+    {
+        // Kolejność walidacji: jeżeli czujnik nie istnieje, nie ma sensu mówić o nawie.
+        var nawaRepo = new FakeNawaRepo();
+        var sensorRepo = new FakeSensorRepo();
+        var sut = new AssignSensorToNawaCommandService(sensorRepo, nawaRepo);
+
+        var result = await sut.ExecuteAsync(Guid.NewGuid(), Guid.NewGuid(), CancellationToken.None);
+
+        Assert.Equal(AssignSensorResult.SensorNotFound, result);
+    }
+
     private sealed class FakeNawaRepo : INawaRepository
     {
         private readonly Dictionary<Guid, Nawa> _items;

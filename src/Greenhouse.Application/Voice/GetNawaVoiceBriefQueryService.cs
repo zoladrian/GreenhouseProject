@@ -2,6 +2,8 @@ using System.Globalization;
 using System.Text;
 using Greenhouse.Application.Abstractions;
 using Greenhouse.Application.Charts;
+using Greenhouse.Application.Nawy;
+using Greenhouse.Application.Time;
 using Greenhouse.Domain.Nawy;
 using Microsoft.Extensions.Options;
 
@@ -10,26 +12,34 @@ namespace Greenhouse.Application.Voice;
 public sealed class GetNawaVoiceBriefQueryService
 {
     private static readonly TimeSpan HistoryLookback = TimeSpan.FromHours(72);
-    private const int PostWateringWetMinutesThreshold = 30;
 
     private readonly VoiceOptions _voice;
+    private readonly AnalyticsOptions _analytics;
     private readonly INawaRepository _nawy;
     private readonly ISensorRepository _sensors;
     private readonly ISensorReadingRepository _readings;
     private readonly GetWateringEventsQueryService _watering;
+    private readonly IClock _clock;
+    private readonly IGreenhouseTimeZoneResolver _tz;
 
     public GetNawaVoiceBriefQueryService(
         IOptions<VoiceOptions> voiceOptions,
+        IOptions<AnalyticsOptions> analyticsOptions,
         INawaRepository nawy,
         ISensorRepository sensors,
         ISensorReadingRepository readings,
-        GetWateringEventsQueryService watering)
+        GetWateringEventsQueryService watering,
+        IClock clock,
+        IGreenhouseTimeZoneResolver tz)
     {
         _voice = voiceOptions.Value;
+        _analytics = analyticsOptions.Value;
         _nawy = nawy;
         _sensors = sensors;
         _readings = readings;
         _watering = watering;
+        _clock = clock;
+        _tz = tz;
     }
 
     public async Task<NawaVoiceBriefDto?> ExecuteAsync(Guid nawaId, CancellationToken cancellationToken)
@@ -38,9 +48,9 @@ public sealed class GetNawaVoiceBriefQueryService
         if (nawa is null)
             return null;
 
-        var tz = ResolveTimeZone(_voice.TimeZoneId);
+        var tz = _tz.Resolve(_voice.TimeZoneId);
         var pl = CultureInfo.GetCultureInfo("pl-PL");
-        var utcNow = DateTime.UtcNow;
+        var utcNow = _clock.UtcNow;
 
         var allSensors = await _sensors.ListAsync(cancellationToken);
         var nawaSensors = allSensors.Where(s => s.NawaId == nawa.Id).ToList();
@@ -67,7 +77,9 @@ public sealed class GetNawaVoiceBriefQueryService
             ? Math.Round(maxMoisture.Value - minMoisture.Value, 2)
             : (decimal?)null;
         var avgTemp = temperatures.Count > 0 ? Math.Round(temperatures.Average(), 2) : (decimal?)null;
-        var oldestReading = latestReadings.Count > 0 ? latestReadings.Min(r => r.ReceivedAtUtc) : (DateTime?)null;
+        // Spójność z GetDashboardQueryService: status zawsze liczymy od najstarszego SoilMoisture-bearing odczytu,
+        // żeby brief głosowy nie pokazywał innego stanu niż dashboard tej samej nawy.
+        var oldestReading = SoilReadingFreshness.ResolveOldestSoilReading(latestReadings);
 
         var thresholds = nawa.GetMoistureThresholds();
         var status = OperatorStatusCalculator.Calculate(
@@ -96,8 +108,8 @@ public sealed class GetNawaVoiceBriefQueryService
                 sensorIdsWithMoisture,
                 nawa.MoistureMax.Value,
                 utcNow,
-                maxLookbackMinutes: 240);
-            if (wetMin > 0 && wetMin < PostWateringWetMinutesThreshold)
+                maxLookbackMinutes: _analytics.PostWateringWetMaxLookbackMinutes);
+            if (wetMin > 0 && wetMin < _analytics.PostWateringWetMinutesThreshold)
                 status = OperatorStatus.PostWatering;
         }
 
@@ -105,7 +117,7 @@ public sealed class GetNawaVoiceBriefQueryService
 
         var lastWatering = await _watering.TryGetLastWateringEventAsync(
             nawa.Id,
-            utcNow - VoiceWateringSpeech.DefaultWateringLookback,
+            utcNow - _analytics.WateringLookback,
             utcNow,
             cancellationToken);
 
@@ -137,7 +149,7 @@ public sealed class GetNawaVoiceBriefQueryService
             sb.Append("Brak aktualnych odczytów wilgotności z czujników. ");
 
         if (status == OperatorStatus.PostWatering)
-            sb.Append(VoiceWateringSpeech.ForPostWateringContext(lastWatering, utcNow, tz, pl));
+            sb.Append(VoiceWateringSpeech.ForPostWateringContext(lastWatering, utcNow, tz, pl, _analytics.WateringLookback));
 
         if (avgTemp.HasValue)
             sb.Append("Średnia temperatura z czujników około ").Append(Fmt(avgTemp.Value)).Append(" stopni Celsjusza. ");
@@ -166,7 +178,7 @@ public sealed class GetNawaVoiceBriefQueryService
             else
                 sb.Append("Suchość jest widoczna teraz, ale nie udało się oszacować momentu startu z historii 72 godzin. ");
 
-            sb.Append(VoiceWateringSpeech.ForDrySinceWatering(lastWatering, utcNow, tz, pl));
+            sb.Append(VoiceWateringSpeech.ForDrySinceWatering(lastWatering, utcNow, tz, pl, _analytics.WateringLookback));
         }
 
         if (mMax.HasValue && (status == OperatorStatus.Warning || status == OperatorStatus.Conflict))
@@ -232,19 +244,4 @@ public sealed class GetNawaVoiceBriefQueryService
 
     private static string FormatLocal(DateTime utc, TimeZoneInfo tz, CultureInfo culture) =>
         TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(utc, DateTimeKind.Utc), tz).ToString("g", culture);
-
-    private static TimeZoneInfo ResolveTimeZone(string timeZoneId)
-    {
-        if (string.IsNullOrWhiteSpace(timeZoneId))
-            return TimeZoneInfo.Utc;
-
-        try
-        {
-            return TimeZoneInfo.FindSystemTimeZoneById(timeZoneId.Trim());
-        }
-        catch
-        {
-            return TimeZoneInfo.Utc;
-        }
-    }
 }

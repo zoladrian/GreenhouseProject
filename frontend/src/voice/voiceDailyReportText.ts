@@ -1,8 +1,5 @@
 import type { VoiceDailyReportDto } from '../api/client';
-
-function fmtNum(n: number): string {
-  return n.toLocaleString('pl-PL', { maximumFractionDigits: 1, minimumFractionDigits: 0 });
-}
+import { formatNumberPl } from '../utils/formatPl';
 
 /** Tekst pod Web Speech API — w pełni offline (dane z API na malince). Krótkie zdania = lepsze pauzy i odmiana w syntezie. */
 export function buildVoiceDailyReportText(r: VoiceDailyReportDto): string {
@@ -22,13 +19,13 @@ export function buildVoiceDailyReportText(r: VoiceDailyReportDto): string {
       parts.push('Od północy brak zapisanych odczytów z czujników.');
     } else {
       if (n.avgTemperature != null) {
-        parts.push(`Średnia temperatura z czujników od północy: ${fmtNum(n.avgTemperature)} stopni Celsjusza.`);
+        parts.push(`Średnia temperatura z czujników od północy: ${formatNumberPl(n.avgTemperature)} stopni Celsjusza.`);
       } else {
         parts.push('Brak danych o temperaturze od północy.');
       }
 
       if (n.avgSoilMoisture != null) {
-        parts.push(`Średnia wilgotność gleby od północy: ${fmtNum(n.avgSoilMoisture)} procent.`);
+        parts.push(`Średnia wilgotność gleby od północy: ${formatNumberPl(n.avgSoilMoisture)} procent.`);
       } else {
         parts.push('Brak danych o wilgotności gleby od północy.');
       }

@@ -1,3 +1,6 @@
+using System.Security.Cryptography;
+using System.Text;
+
 namespace Greenhouse.Domain.SensorReadings;
 
 public sealed class SensorReading
@@ -18,6 +21,14 @@ public sealed class SensorReading
     public string Topic { get; private set; } = string.Empty;
 
     public string RawPayloadJson { get; private set; } = string.Empty;
+
+    /// <summary>
+    /// Deterministyczny hash <c>topic + '\n' + RawPayloadJson</c> (lowercase hex SHA-256).
+    /// Używany przez ingest do szybkiej, semantycznej dedup-policy odpornej na restart
+    /// (Z2M retained, replay brokera) — porównanie po hashu w oknie czasowym ±2 s
+    /// jest tańsze i bezpieczniejsze niż equality całego JSON-a.
+    /// </summary>
+    public string? PayloadHash { get; private set; }
 
     public decimal? SoilMoisture { get; private set; }
 
@@ -112,6 +123,7 @@ public sealed class SensorReading
             ReceivedAtUtc = DateTime.SpecifyKind(receivedAtUtc, DateTimeKind.Utc),
             Topic = topic,
             RawPayloadJson = rawPayloadJson,
+            PayloadHash = ComputePayloadHash(topic, rawPayloadJson),
             SoilMoisture = soilMoisture,
             Temperature = temperature,
             Battery = battery,
@@ -124,5 +136,20 @@ public sealed class SensorReading
             CleaningReminder = cleaningReminder,
             SensorId = sensorId
         };
+    }
+
+    /// <summary>
+    /// Publiczny helper, żeby ingestion mógł policzyć hash zanim trafi do <see cref="Create"/>
+    /// i sprawdzić duplikat w repozytorium bez konstruowania pełnej encji.
+    /// </summary>
+    public static string ComputePayloadHash(string topic, string rawPayloadJson)
+    {
+        ArgumentNullException.ThrowIfNull(topic);
+        ArgumentNullException.ThrowIfNull(rawPayloadJson);
+        Span<byte> buffer = stackalloc byte[32];
+        var bytes = Encoding.UTF8.GetBytes(string.Concat(topic, "\n", rawPayloadJson));
+        if (!SHA256.TryHashData(bytes, buffer, out _))
+            throw new InvalidOperationException("Nie udało się policzyć SHA-256 z payloadu.");
+        return Convert.ToHexString(buffer).ToLowerInvariant();
     }
 }

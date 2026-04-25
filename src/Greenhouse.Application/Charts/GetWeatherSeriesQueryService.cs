@@ -87,7 +87,7 @@ public sealed class GetWeatherSeriesQueryService
         if (nawaId.HasValue)
         {
             var all = await _sensors.ListAsync(cancellationToken);
-            return all.Where(s => s.NawaId == nawaId.Value).Select(s => s.Id).ToList();
+            return new NawaChartSensorScope(all).ResolveGlobalWeatherSensorIds();
         }
 
         return [];

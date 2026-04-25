@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace Greenhouse.Api.Operations;
+namespace Greenhouse.Infrastructure.Hosting;
 
 public sealed class DataLifecycleOptions
 {

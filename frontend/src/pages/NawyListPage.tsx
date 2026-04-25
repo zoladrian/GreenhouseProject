@@ -5,7 +5,7 @@ import { useFetch } from '../hooks/useFetch';
 import { NawyPageBackdrop } from '../components/NawyPageBackdrop';
 
 export function NawyListPage() {
-  const { data: nawy, loading, refetch } = useFetch(() => api.getNawy());
+  const { data: nawy, loading, refetch } = useFetch((signal) => api.getNawy(signal));
   const navigate = useNavigate();
   const [showForm, setShowForm] = useState(false);
   const [newName, setNewName] = useState('');

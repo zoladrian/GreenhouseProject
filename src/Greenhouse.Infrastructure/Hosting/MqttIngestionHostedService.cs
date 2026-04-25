@@ -1,33 +1,40 @@
 using Greenhouse.Application.Abstractions;
+using Greenhouse.Application.Ingestion;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using MQTTnet;
 using MQTTnet.Protocol;
 
-namespace Greenhouse.Api.Mqtt;
+namespace Greenhouse.Infrastructure.Hosting;
 
+/// <summary>
+/// Wspólna pętla ingestu MQTT: subskrypcja, retry połączenia, deleguje wiadomość do
+/// <see cref="IMqttMessageIngestionService"/>. Uruchamiana w API albo Workers — nie w obu.
+/// </summary>
 public sealed class MqttIngestionHostedService : BackgroundService
 {
     private readonly ILogger<MqttIngestionHostedService> _logger;
-    private readonly IConfiguration _configuration;
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly IMqttIngestTelemetry _telemetry;
+    private readonly IOptions<MqttOptions> _options;
 
     public MqttIngestionHostedService(
         ILogger<MqttIngestionHostedService> logger,
-        IConfiguration configuration,
         IServiceScopeFactory scopeFactory,
-        IMqttIngestTelemetry telemetry)
+        IMqttIngestTelemetry telemetry,
+        IOptions<MqttOptions> options)
     {
         _logger = logger;
-        _configuration = configuration;
         _scopeFactory = scopeFactory;
         _telemetry = telemetry;
+        _options = options;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        var options = new MqttOptions();
-        _configuration.GetSection(MqttOptions.SectionName).Bind(options);
-
+        var options = _options.Value;
         if (!options.Enabled)
         {
             _logger.LogInformation("MQTT ingestion is disabled (Mqtt:Enabled=false).");
@@ -82,7 +89,7 @@ public sealed class MqttIngestionHostedService : BackgroundService
             }
         };
 
-        var mqttClientId = $"greenhouse-api-{Environment.ProcessId}";
+        var mqttClientId = $"greenhouse-{Environment.ProcessId}";
         var mqttOptions = new MqttClientOptionsBuilder()
             .WithTcpServer(options.Host, options.Port)
             .WithClientId(mqttClientId)

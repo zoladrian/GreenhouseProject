@@ -7,6 +7,8 @@ namespace Greenhouse.Api.Tests;
 
 public sealed class ApiMutationAuthTests
 {
+    private const string ValidApiKey = "ZxQv-9fA1bD2eC3hJ4kL5mN6";
+
     [Fact]
     public async Task MutationEndpoint_ShouldReturnUnauthorized_WhenApiKeyMissing()
     {
@@ -23,7 +25,7 @@ public sealed class ApiMutationAuthTests
     {
         await using var factory = new AuthRequiredFactory();
         var client = factory.CreateClient();
-        client.DefaultRequestHeaders.Add("X-Api-Key", "test-api-key-123");
+        client.DefaultRequestHeaders.Add("X-Api-Key", ValidApiKey);
 
         var resp = await client.PostAsJsonAsync("/api/nawa", new { name = "Auth test" });
 
@@ -38,7 +40,7 @@ public sealed class ApiMutationAuthTests
             builder.UseSetting("Infrastructure:DatabasePath", dbPath);
             builder.UseSetting("Mqtt:Enabled", "false");
             builder.UseSetting("ApiSecurity:RequireForMutations", "true");
-            builder.UseSetting("ApiSecurity:ApiKey", "test-api-key-123");
+            builder.UseSetting("ApiSecurity:ApiKey", ValidApiKey);
         }
     }
 }

@@ -2,18 +2,12 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
 import { startDeployVersionWatch } from './deployWatch';
+import { registerPwa } from './pwa/registerPwa';
 import './theme.css';
 import './index.css';
 
 startDeployVersionWatch();
-
-if (import.meta.env.PROD && 'serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch(() => {
-      /* brak SW nie blokuje aplikacji */
-    });
-  });
-}
+registerPwa();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

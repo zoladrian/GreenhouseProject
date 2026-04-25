@@ -65,9 +65,11 @@ public sealed class GreenhouseDbContext : DbContext
             builder.Property(x => x.IlluminanceAverage20MinRaw);
             builder.Property(x => x.IlluminanceMaximumTodayRaw);
             builder.Property(x => x.CleaningReminder);
+            builder.Property(x => x.PayloadHash).HasMaxLength(64);
             builder.HasIndex(x => x.ReceivedAtUtc);
             builder.HasIndex(x => x.SensorIdentifier);
             builder.HasIndex(x => new { x.SensorId, x.ReceivedAtUtc });
+            builder.HasIndex(x => new { x.SensorId, x.PayloadHash, x.ReceivedAtUtc });
             builder.HasOne<Sensor>()
                 .WithMany()
                 .HasForeignKey(x => x.SensorId)

@@ -1,5 +1,6 @@
 import { NavLink, Outlet } from 'react-router-dom';
 import { BrandedImg } from './BrandedImg';
+import { ConnectivityBanner } from './ConnectivityBanner';
 import { DeployVersionBar } from './DeployVersionBar';
 
 const logoPng = '/images/kwiaty-polskie-logo.png';
@@ -15,6 +16,7 @@ const navItems = [
 export function Layout() {
   return (
     <div className="app-shell">
+      <ConnectivityBanner />
       <header className="app-header">
         <BrandedImg
           className="app-header__logo"

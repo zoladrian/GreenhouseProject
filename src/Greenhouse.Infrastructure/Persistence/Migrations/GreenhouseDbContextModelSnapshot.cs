@@ -85,6 +85,10 @@ namespace Greenhouse.Infrastructure.Persistence.Migrations
                     b.Property<int?>("LinkQuality")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("PayloadHash")
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
                     b.Property<bool?>("Rain")
                         .HasColumnType("INTEGER");
 
@@ -124,6 +128,8 @@ namespace Greenhouse.Infrastructure.Persistence.Migrations
                     b.HasIndex("SensorIdentifier");
 
                     b.HasIndex("SensorId", "ReceivedAtUtc");
+
+                    b.HasIndex("SensorId", "PayloadHash", "ReceivedAtUtc");
 
                     b.ToTable("SensorReadings", (string)null);
                 });

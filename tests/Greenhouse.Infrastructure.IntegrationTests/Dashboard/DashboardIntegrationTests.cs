@@ -3,6 +3,7 @@ using Greenhouse.Application.Charts;
 using Greenhouse.Application.Ingestion;
 using Greenhouse.Application.Nawy;
 using Greenhouse.Application.Sensors;
+using Greenhouse.Application.Time;
 using Greenhouse.Application.Voice;
 using Greenhouse.Domain.Nawy;
 using Greenhouse.Domain.Sensors;
@@ -62,14 +63,19 @@ public sealed class DashboardIntegrationTests : IDisposable
         _db.ChangeTracker.Clear();
 
         var voice = Options.Create(new VoiceOptions());
+        var analytics = Options.Create(new AnalyticsOptions());
         var watering = new GetWateringEventsQueryService(sensorRepo, readingRepo);
+        var tzResolver = new GreenhouseTimeZoneResolver(NullLogger<GreenhouseTimeZoneResolver>.Instance);
         var dashboardService = new GetDashboardQueryService(
             nawaRepo,
             sensorRepo,
             readingRepo,
             NullLogger<GetDashboardQueryService>.Instance,
             voice,
-            watering);
+            analytics,
+            watering,
+            new SystemClock(),
+            tzResolver);
         var snapshots = await dashboardService.ExecuteAsync(CancellationToken.None);
 
         Assert.Single(snapshots);
@@ -102,7 +108,7 @@ public sealed class DashboardIntegrationTests : IDisposable
 
         _db.ChangeTracker.Clear();
 
-        var healthService = new GetSensorHealthQueryService(sensorRepo, readingRepo);
+        var healthService = new GetSensorHealthQueryService(sensorRepo, readingRepo, new SystemClock());
         var result = await healthService.ExecuteAsync(CancellationToken.None);
 
         Assert.Contains(result, h => h.ExternalId == "sensor-health-test" && h.Battery == 50);

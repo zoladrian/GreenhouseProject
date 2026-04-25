@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import ReactECharts from 'echarts-for-react';
 import type { WeatherPoint } from '../api/client';
 import { resolveSeriesLegendName } from '../utils/chartSeries';
-import { echartsAxisTooltipPl, echartsTimeXAxisPl, inferRangeMs, utcIsoToMs } from '../utils/chartTimePl';
+import { chartGridBottomPl, echartsAxisTooltipPl, echartsTimeXAxisPl, inferRangeMs, utcIsoToMs } from '../utils/chartTimePl';
 
 export type WeatherMetricKey =
   | 'rain'
@@ -30,14 +30,12 @@ export function WeatherChart({
   selectedMetrics: WeatherMetricKey[];
   sensorLegendById?: Record<string, string>;
 }) {
-  if (points.length === 0 || selectedMetrics.length === 0) {
-    return <p style={{ color: '#9ca3af', textAlign: 'center' }}>Brak danych pogodowych do wykresu</p>;
-  }
-
+  // Hooki przed wczesnym returnem — kolejność wywołań musi być stała.
   const keys = useMemo(
     () => [...new Set(points.map((p) => (p.sensorId ? p.sensorId : `topic:${p.sensorIdentifier}`)))],
     [points],
   );
+
   const series: object[] = useMemo(() => {
     const s: object[] = [];
     for (const key of keys) {
@@ -81,24 +79,34 @@ export function WeatherChart({
         });
       }
     }
-
     return s;
   }, [keys, points, selectedMetrics, sensorLegendById]);
-  const rangeMs = inferRangeMs(points.map((p) => utcIsoToMs(p.utcTime)).filter((n) => !Number.isNaN(n)));
 
-  const option = {
-    title: { text: 'Pogoda (RB-SRAIN01)', left: 'center', textStyle: { fontSize: 14 } },
-    tooltip: echartsAxisTooltipPl(),
-    legend: { bottom: 0, textStyle: { fontSize: 11 } },
-    xAxis: echartsTimeXAxisPl(rangeMs),
-    yAxis: [
-      { type: 'value' as const, name: 'Wartość surowa' },
-      { type: 'value' as const, name: 'Opad', min: 0, max: 1, interval: 1 },
-    ],
-    grid: { left: 52, right: 52, top: 40, bottom: rangeMs && rangeMs > 48 * 3600_000 ? 64 : 56 },
-    animation: !(rangeMs && rangeMs > 24 * 3600_000),
-    series,
-  };
+  const rangeMs = useMemo(
+    () => inferRangeMs(points.map((p) => utcIsoToMs(p.utcTime)).filter((n) => !Number.isNaN(n))),
+    [points],
+  );
+
+  const option = useMemo(
+    () => ({
+      title: { text: 'Pogoda (RB-SRAIN01)', left: 'center', textStyle: { fontSize: 14 } },
+      tooltip: echartsAxisTooltipPl(),
+      legend: { bottom: 0, textStyle: { fontSize: 11 } },
+      xAxis: echartsTimeXAxisPl(rangeMs),
+      yAxis: [
+        { type: 'value' as const, name: 'Wartość surowa' },
+        { type: 'value' as const, name: 'Opad', min: 0, max: 1, interval: 1 },
+      ],
+      grid: { left: 52, right: 52, top: 40, bottom: Math.max(56, chartGridBottomPl(rangeMs)) },
+      animation: !(rangeMs && rangeMs > 24 * 3600_000),
+      series,
+    }),
+    [rangeMs, series],
+  );
+
+  if (points.length === 0 || selectedMetrics.length === 0) {
+    return <p style={{ color: '#9ca3af', textAlign: 'center' }}>Brak danych pogodowych do wykresu</p>;
+  }
 
   return <ReactECharts option={option} style={{ height: 300 }} />;
 }

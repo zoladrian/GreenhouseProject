@@ -1,28 +1,78 @@
 const BASE = '/api';
 
-async function fetchJson<T>(url: string): Promise<T> {
-  const resp = await fetch(`${BASE}${url}`);
-  if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+/**
+ * Wyjątek z dodatkowymi metadanymi: status HTTP i ciało odpowiedzi (jeśli dało się przeczytać).
+ * Pozwala UI pokazać użytkownikowi treść błędu zamiast surowego "HTTP 500".
+ */
+export class ApiError extends Error {
+  readonly status: number;
+  readonly bodySnippet: string | null;
+
+  constructor(status: number, message: string, bodySnippet: string | null) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    this.bodySnippet = bodySnippet;
+  }
+}
+
+async function buildErrorMessage(resp: Response): Promise<{ msg: string; snippet: string | null }> {
+  const fallback = `HTTP ${resp.status}`;
+  // Body można odczytać tylko raz — najpierw spróbuj jako JSON z polem `error` lub `title` (RFC7807),
+  // potem jako tekst (max 240 znaków, żeby nie zalać UI).
+  try {
+    const txt = await resp.text();
+    if (!txt) return { msg: fallback, snippet: null };
+    try {
+      const j = JSON.parse(txt) as { error?: string; title?: string; detail?: string; message?: string };
+      const fromJson = j.error ?? j.title ?? j.detail ?? j.message;
+      if (typeof fromJson === 'string' && fromJson.trim().length > 0) {
+        return { msg: `${fallback}: ${fromJson}`, snippet: txt.length > 240 ? txt.slice(0, 240) + '…' : txt };
+      }
+    } catch {
+      /* nie JSON — zwracamy tekst */
+    }
+    const snippet = txt.length > 240 ? txt.slice(0, 240) + '…' : txt;
+    return { msg: `${fallback}: ${snippet}`, snippet };
+  } catch {
+    return { msg: fallback, snippet: null };
+  }
+}
+
+async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
+  const resp = await fetch(`${BASE}${url}`, init);
+  if (!resp.ok) {
+    const { msg, snippet } = await buildErrorMessage(resp);
+    throw new ApiError(resp.status, msg, snippet);
+  }
   return resp.json();
 }
 
-async function putJson<T>(url: string, body: unknown): Promise<T> {
+async function putJson<T>(url: string, body: unknown, init?: RequestInit): Promise<T> {
   const resp = await fetch(`${BASE}${url}`, {
+    ...init,
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...(init?.headers ?? {}) },
     body: JSON.stringify(body),
   });
-  if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+  if (!resp.ok) {
+    const { msg, snippet } = await buildErrorMessage(resp);
+    throw new ApiError(resp.status, msg, snippet);
+  }
   return resp.json();
 }
 
-async function postJson<T>(url: string, body: unknown): Promise<T> {
+async function postJson<T>(url: string, body: unknown, init?: RequestInit): Promise<T> {
   const resp = await fetch(`${BASE}${url}`, {
+    ...init,
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...(init?.headers ?? {}) },
     body: JSON.stringify(body),
   });
-  if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+  if (!resp.ok) {
+    const { msg, snippet } = await buildErrorMessage(resp);
+    throw new ApiError(resp.status, msg, snippet);
+  }
   return resp.json();
 }
 
@@ -163,16 +213,19 @@ export interface VoiceDailyReportDto {
   nawy: NawaVoiceLineDto[];
 }
 
+const sig = (signal?: AbortSignal): RequestInit | undefined => (signal ? { signal } : undefined);
+
 export const api = {
-  getVoiceDailyReport: () => fetchJson<VoiceDailyReportDto>('/voice/daily-report'),
-  getNawaVoiceBrief: (id: string) => fetchJson<NawaVoiceBriefDto>(`/voice/nawa/${id}/brief`),
-  getDashboard: () => fetchJson<NawaSnapshot[]>('/dashboard'),
-  getNawy: () => fetchJson<NawaDto[]>('/nawa'),
-  getNawaDetail: (id: string) => fetchJson<NawaDetailDto>(`/nawa/${id}/detail`),
+  getVoiceDailyReport: (signal?: AbortSignal) => fetchJson<VoiceDailyReportDto>('/voice/daily-report', sig(signal)),
+  getNawaVoiceBrief: (id: string, signal?: AbortSignal) =>
+    fetchJson<NawaVoiceBriefDto>(`/voice/nawa/${id}/brief`, sig(signal)),
+  getDashboard: (signal?: AbortSignal) => fetchJson<NawaSnapshot[]>('/dashboard', sig(signal)),
+  getNawy: (signal?: AbortSignal) => fetchJson<NawaDto[]>('/nawa', sig(signal)),
+  getNawaDetail: (id: string, signal?: AbortSignal) => fetchJson<NawaDetailDto>(`/nawa/${id}/detail`, sig(signal)),
   createNawa: (body: { name: string; description?: string }) => postJson<NawaDto>('/nawa', body),
   updateNawa: (id: string, body: Record<string, unknown>) => putJson<NawaDto>(`/nawa/${id}`, body),
-  getSensors: () => fetchJson<SensorListItem[]>('/sensor'),
-  getSensorHealth: () => fetchJson<SensorHealthDto[]>('/sensor/health'),
+  getSensors: (signal?: AbortSignal) => fetchJson<SensorListItem[]>('/sensor', sig(signal)),
+  getSensorHealth: (signal?: AbortSignal) => fetchJson<SensorHealthDto[]>('/sensor/health', sig(signal)),
   assignSensor: async (sensorId: string, nawaId: string | null) => {
     const resp = await fetch(`${BASE}/sensor/${sensorId}/nawa`, {
       method: 'PUT',
@@ -180,14 +233,8 @@ export const api = {
       body: JSON.stringify({ nawaId }),
     });
     if (!resp.ok) {
-      let msg = `HTTP ${resp.status}`;
-      try {
-        const j = (await resp.json()) as { error?: string };
-        if (j?.error) msg = j.error;
-      } catch {
-        /* ignore */
-      }
-      throw new Error(msg);
+      const { msg, snippet } = await buildErrorMessage(resp);
+      throw new ApiError(resp.status, msg, snippet);
     }
   },
   updateSensorDisplayName: (sensorId: string, displayName: string | null) =>
@@ -195,24 +242,27 @@ export const api = {
   deleteSensor: async (sensorId: string) => {
     const resp = await fetch(`${BASE}/sensor/${sensorId}`, { method: 'DELETE' });
     if (resp.status === 404) {
-      throw new Error('Czujnik nie istnieje.');
+      throw new ApiError(404, 'Czujnik nie istnieje.', null);
     }
     if (!resp.ok) {
-      throw new Error(`HTTP ${resp.status}`);
+      const { msg, snippet } = await buildErrorMessage(resp);
+      throw new ApiError(resp.status, msg, snippet);
     }
   },
-  getMoistureSeries: (params: string) => fetchJson<MoisturePoint[]>(`/chart/moisture?${params}`),
-  getWeatherSeries: (params: string) => fetchJson<WeatherPoint[]>(`/chart/weather?${params}`),
-  getWateringEvents: (nawaId: string, from?: string, to?: string) => {
+  getMoistureSeries: (params: string, signal?: AbortSignal) =>
+    fetchJson<MoisturePoint[]>(`/chart/moisture?${params}`, sig(signal)),
+  getWeatherSeries: (params: string, signal?: AbortSignal) =>
+    fetchJson<WeatherPoint[]>(`/chart/weather?${params}`, sig(signal)),
+  getWateringEvents: (nawaId: string, from?: string, to?: string, signal?: AbortSignal) => {
     let qs = `nawaId=${nawaId}`;
     if (from) qs += `&from=${from}`;
     if (to) qs += `&to=${to}`;
-    return fetchJson<WateringEventDto[]>(`/chart/watering-events?${qs}`);
+    return fetchJson<WateringEventDto[]>(`/chart/watering-events?${qs}`, sig(signal));
   },
-  getDryingRates: (nawaId: string, from?: string, to?: string) => {
+  getDryingRates: (nawaId: string, from?: string, to?: string, signal?: AbortSignal) => {
     let qs = `nawaId=${nawaId}`;
     if (from) qs += `&from=${from}`;
     if (to) qs += `&to=${to}`;
-    return fetchJson<DryingRateDto[]>(`/chart/drying-rate?${qs}`);
+    return fetchJson<DryingRateDto[]>(`/chart/drying-rate?${qs}`, sig(signal));
   },
 };

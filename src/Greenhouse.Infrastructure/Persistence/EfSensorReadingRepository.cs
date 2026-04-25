@@ -136,16 +136,22 @@ public sealed class EfSensorReadingRepository : ISensorReadingRepository
         string rawPayloadJson,
         CancellationToken cancellationToken)
     {
+        // Polityka dedup: ten sam czujnik + identyczny payload (po hashu) w oknie ±2 sekundy.
+        // Hash deterministyczny z (Topic + '\n' + RawPayloadJson) — odporne na restart przy
+        // retained MQTT (Z2M wysyła ostatni stan, broker replayuje wstrzymane wiadomości).
+        // Fallback po RawPayloadJson dla wierszy zapisanych przed migracją (PayloadHash NULL).
         var from = receivedAtUtc.AddSeconds(-2);
         var to = receivedAtUtc.AddSeconds(2);
+        var hash = SensorReading.ComputePayloadHash(topic, rawPayloadJson);
         return await _dbContext.SensorReadings
             .AsNoTracking()
             .AnyAsync(r =>
                 r.SensorIdentifier == sensorIdentifier &&
                 r.Topic == topic &&
-                r.RawPayloadJson == rawPayloadJson &&
                 r.ReceivedAtUtc >= from &&
-                r.ReceivedAtUtc <= to,
+                r.ReceivedAtUtc <= to &&
+                ((r.PayloadHash != null && r.PayloadHash == hash) ||
+                 (r.PayloadHash == null && r.RawPayloadJson == rawPayloadJson)),
                 cancellationToken);
     }
 }

@@ -3,11 +3,12 @@ import { Link } from 'react-router-dom';
 import { api } from '../api/client';
 import { useFetch } from '../hooks/useFetch';
 import { BatteryIcon } from '../components/BatteryIcon';
+import { formatDateTimeShortPl } from '../utils/formatPl';
 
 export function SensorsPage() {
   const { data, loading, error, refetch } = useFetch(
-    () =>
-      Promise.all([api.getSensorHealth(), api.getNawy()]).then(([health, nawy]) => ({
+    (signal) =>
+      Promise.all([api.getSensorHealth(signal), api.getNawy(signal)]).then(([health, nawy]) => ({
         health,
         nawy,
       })),
@@ -63,8 +64,9 @@ export function SensorsPage() {
       <h2 style={{ fontSize: 20, marginBottom: 8 }}>Sensory</h2>
       <p style={{ color: '#64748b', fontSize: 13, marginBottom: 14, lineHeight: 1.45 }}>
         Czujniki pojawiają się po pierwszej wiadomości MQTT ze stanem urządzenia (Zigbee2MQTT → Mosquitto).{' '}
-        <strong>Przypisz czujnik do nawy</strong>, żeby wilgotność była widoczna na{' '}
-        <Link to="/">Pulpicie</Link> i w wykresach nawy. Lista to rekordy w bazie — stare lub zdublowane wpisy
+        <strong>Czujniki glebowe</strong> przypisz do nawy, żeby wilgotność była widoczna na{' '}
+        <Link to="/">Pulpicie</Link> i w wykresach nawy. <strong>Czujnik pogodowy (deszcz)</strong> jest zawsze globalny —
+        ten sam zestaw danych trafia na wykresy wszystkich naw. Lista to rekordy w bazie — stare lub zdublowane wpisy
         (np. po zmianie nazwy w Z2M) możesz <strong>usunąć</strong>, jeśli nie odpowiadają już żadnemu urządzeniu.
       </p>
 
@@ -116,45 +118,43 @@ export function SensorsPage() {
                 <span>🧽 Czyszczenie: {s.cleaningReminder == null ? '—' : s.cleaningReminder ? 'wymagane' : 'OK'}</span>
               </>
             )}
-            <span>
-              ⏱️{' '}
-              {s.lastReadingUtc
-                ? new Date(s.lastReadingUtc).toLocaleString('pl-PL', {
-                    day: '2-digit',
-                    month: '2-digit',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })
-                : '—'}
-            </span>
+            <span>⏱️ {formatDateTimeShortPl(s.lastReadingUtc)}</span>
           </div>
 
-          <label style={{ display: 'block', marginTop: 12, fontSize: 12, color: '#475569' }}>
-            <span style={{ display: 'block', marginBottom: 4 }}>Przypisanie do nawy</span>
-            <select
-              value={s.nawaId ?? ''}
-              disabled={assigningId === s.sensorId}
-              onChange={(e) => onAssignChange(s.sensorId, e.target.value)}
-              style={{
-                width: '100%',
-                maxWidth: 320,
-                padding: '8px 10px',
-                borderRadius: 8,
-                border: '1px solid #e2e8f0',
-                fontSize: 14,
-                background: '#fff',
-              }}
-            >
-              <option value="">— brak (nie wliczaj do nawy) —</option>
-              {activeNawy.map((n) => (
-                <option key={n.id} value={n.id}>
-                  {n.name}
-                </option>
-              ))}
-            </select>
-          </label>
+          {s.kind === 'Weather' ? (
+            <p style={{ fontSize: 12, color: '#475569', marginTop: 12, marginBottom: 0, lineHeight: 1.5 }}>
+              <strong>Czujnik globalny</strong> — deszcz i jasność są wspólne dla całej instalacji i{' '}
+              <strong>nie podlegają przypisaniu do nawy</strong>. Dane pojawią się na wykresach każdej nawy
+              obok czujników glebowych.
+            </p>
+          ) : (
+            <label style={{ display: 'block', marginTop: 12, fontSize: 12, color: '#475569' }}>
+              <span style={{ display: 'block', marginBottom: 4 }}>Przypisanie do nawy</span>
+              <select
+                value={s.nawaId ?? ''}
+                disabled={assigningId === s.sensorId}
+                onChange={(e) => onAssignChange(s.sensorId, e.target.value)}
+                style={{
+                  width: '100%',
+                  maxWidth: 320,
+                  padding: '8px 10px',
+                  borderRadius: 8,
+                  border: '1px solid #e2e8f0',
+                  fontSize: 14,
+                  background: '#fff',
+                }}
+              >
+                <option value="">— brak (nie wliczaj do nawy) —</option>
+                {activeNawy.map((n) => (
+                  <option key={n.id} value={n.id}>
+                    {n.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
 
-          {s.nawaId && (
+          {s.nawaId && s.kind !== 'Weather' && (
             <p style={{ fontSize: 12, color: '#94a3b8', marginTop: 8, marginBottom: 0 }}>
               Nawy: <strong>{nawaNameById.get(s.nawaId) ?? s.nawaId}</strong>
             </p>
