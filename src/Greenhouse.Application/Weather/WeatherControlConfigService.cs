@@ -145,8 +145,7 @@ public sealed class WeatherControlConfigService
         if (!string.Equals(manual, "auto", StringComparison.OrdinalIgnoreCase))
             return manual;
         var i = intensity ?? 0m;
-        if (rain == true || i >= rainDetectedMin) return "raining";
-        if (i >= highHumidityMin) return "high-humidity";
+        if (i >= rainDetectedMin) return "raining";
         return "no-rain";
     }
 

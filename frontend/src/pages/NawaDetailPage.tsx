@@ -10,6 +10,7 @@ import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'r
 import { QRCodeSVG } from 'qrcode.react';
 import { NawyPageBackdrop } from '../components/NawyPageBackdrop';
 import { formatDateTimeFullPl, keyFromTimestampAndLabel } from '../utils/formatPl';
+import { buildVoiceWeatherReportText } from '../voice/voiceDailyReportText';
 
 type RangePreset = '1h' | '6h' | '24h' | '7d' | '30d' | 'custom';
 
@@ -136,6 +137,7 @@ export function NawaDetailPage() {
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState<string | null>(null);
   const [voiceBriefLoading, setVoiceBriefLoading] = useState(false);
+  const [voiceWeatherLoading, setVoiceWeatherLoading] = useState(false);
   const [voiceBriefError, setVoiceBriefError] = useState<string | null>(null);
   const [weatherSaving, setWeatherSaving] = useState(false);
   const [weatherSaveMsg, setWeatherSaveMsg] = useState<string | null>(null);
@@ -384,7 +386,7 @@ export function NawaDetailPage() {
         <InfoCard label="Sensory" value={String(detail.sensors.length)} />
       </div>
 
-      <div style={{ marginBottom: 16 }}>
+      <div style={{ marginBottom: 16, display: 'grid', gap: 8 }}>
         <button
           type="button"
           className="btn-primary"
@@ -404,11 +406,30 @@ export function NawaDetailPage() {
             }
           }}
         >
-          {voiceBriefLoading ? 'Ładowanie…' : 'Odczytaj stan nawy (głos, szczegóły)'}
+          {voiceBriefLoading ? 'Ładowanie…' : 'Raport wilgotność i temperatura (głos)'}
+        </button>
+        <button
+          type="button"
+          className="btn-primary"
+          disabled={voiceWeatherLoading}
+          style={{ width: '100%', padding: '12px 16px', fontSize: 15, fontWeight: 600 }}
+          onClick={async () => {
+            setVoiceBriefError(null);
+            setVoiceWeatherLoading(true);
+            try {
+              const report = await api.getVoiceWeatherReport();
+              speakPolish(buildVoiceWeatherReportText(report));
+            } catch (e) {
+              setVoiceBriefError(e instanceof Error ? e.message : 'Błąd pobierania raportu pogodowego');
+            } finally {
+              setVoiceWeatherLoading(false);
+            }
+          }}
+        >
+          {voiceWeatherLoading ? 'Ładowanie…' : 'Raport deszcz i nasłonecznienie (głos)'}
         </button>
         <p className="nawa-voice-hint" style={{ fontSize: 11, margin: '6px 0 0', lineHeight: 1.35 }}>
-          Krótki opis po polsku: status wilgotności, progi, ewentualna anomalia temperatury oraz — gdy da się to oszacować z historii —{' '}
-          <strong>od kiedy</strong> utrzymuje się alarm (okno ok. 72 godzin).
+          Dwa osobne raporty: 1) wilgotność + temperatura dla tej nawy, 2) deszcz + nasłonecznienie (surowe wartości).
         </p>
         {voiceBriefError && (
           <p style={{ color: '#d32f2f', fontSize: 13, marginTop: 6 }} role="alert">
@@ -614,29 +635,21 @@ export function NawaDetailPage() {
               <input style={inp} inputMode="decimal" value={cloudyMaxRaw} onChange={(e) => setCloudyMaxRaw(e.target.value)} />
             </label>
             <label style={lbl}>
-              Wschód słońca (HH:mm)
-              <input style={inp} value={sunriseLocal} onChange={(e) => setSunriseLocal(e.target.value)} />
-            </label>
-            <label style={lbl}>
-              Zachód słońca (HH:mm)
-              <input style={inp} value={sunsetLocal} onChange={(e) => setSunsetLocal(e.target.value)} />
-            </label>
-            <label style={lbl}>
-              Ręczny status opadu
+              Feedback opadu (operator)
               <select style={inp} value={manualRainStatus} onChange={(e) => setManualRainStatus(e.target.value as ManualRainStatus)}>
-                <option value="auto">Auto</option>
                 <option value="raining">Aktualnie pada</option>
                 <option value="no-rain">Aktualnie nie pada</option>
                 <option value="high-humidity">Aktualnie duża wilgotność</option>
+                <option value="auto">Brak feedbacku (auto)</option>
               </select>
             </label>
             <label style={lbl}>
-              Ręczny status nasłonecznienia
+              Feedback nasłonecznienia (operator)
               <select style={inp} value={manualLightStatus} onChange={(e) => setManualLightStatus(e.target.value as ManualLightStatus)}>
-                <option value="auto">Auto</option>
                 <option value="sunny">Jest słonecznie</option>
                 <option value="cloudy">Jest zachmurzenie</option>
                 <option value="night">Jest noc</option>
+                <option value="auto">Brak feedbacku (auto)</option>
               </select>
             </label>
           </div>
@@ -647,7 +660,8 @@ export function NawaDetailPage() {
             {weatherSaveMsg && <span style={{ fontSize: 12, color: weatherSaveMsg.startsWith('Zapisano') ? '#15803d' : '#b91c1c' }}>{weatherSaveMsg}</span>}
           </div>
           <p style={{ marginTop: 10, fontSize: 12, color: '#64748b' }}>
-            Harmonogram wschodu/zachodu jest ładowany automatycznie z pliku dla Szczecina przy starcie API.
+            Harmonogram wschodu/zachodu jest ładowany automatycznie z CSV dla Szczecina przy starcie API. Feedback wysyłasz
+            okresowo z list rozwijanych powyżej; opcja „Brak feedbacku (auto)” wraca do klasyfikacji z surowych danych.
           </p>
         </section>
         <WeatherChart
@@ -658,6 +672,8 @@ export function NawaDetailPage() {
           timeBounds={selectedTimeBounds}
           title="Opad"
           nightRangesMs={nightRanges}
+          nightShadeOpacity={0.18}
+          showNightLabel
         />
         <div style={{ height: 12 }} />
         <WeatherChart
@@ -668,6 +684,8 @@ export function NawaDetailPage() {
           timeBounds={selectedTimeBounds}
           title="Nasłonecznienie"
           nightRangesMs={nightRanges}
+          nightShadeOpacity={0.32}
+          showNightLabel
         />
       </div>
 

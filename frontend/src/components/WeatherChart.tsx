@@ -27,6 +27,8 @@ export function WeatherChart({
   timeBounds,
   title = 'Pogoda',
   nightRangesMs = [],
+  nightShadeOpacity = 0.12,
+  showNightLabel = false,
 }: {
   points: WeatherPoint[];
   selectedMetrics: WeatherMetricKey[];
@@ -37,6 +39,8 @@ export function WeatherChart({
   timeBounds?: { minMs: number; maxMs: number } | null;
   title?: string;
   nightRangesMs?: Array<{ fromMs: number; toMs: number }>;
+  nightShadeOpacity?: number;
+  showNightLabel?: boolean;
 }) {
   // Hooki przed wczesnym returnem — kolejność wywołań musi być stała.
   const keys = useMemo(
@@ -99,23 +103,37 @@ export function WeatherChart({
     () => ({
       title: { text: title, left: 'center', textStyle: { fontSize: 14 } },
       tooltip: echartsAxisTooltipPl(),
-      legend: { bottom: 0, textStyle: { fontSize: 11 } },
+      legend: {
+        type: 'scroll' as const,
+        bottom: 0,
+        left: 8,
+        right: 8,
+        textStyle: { fontSize: 11 },
+      },
       xAxis: echartsTimeXAxisPl(rangeMs, timeBounds),
       yAxis: selectedMetrics.includes('rain')
         ? ([{ type: 'value' as const, name: 'Wartość surowa' }, { type: 'value' as const, name: 'Opad', min: 0, max: 1, interval: 1 }] as const)
         : ({ type: 'value' as const, name: 'Wartość surowa' } as const),
-      grid: { left: 52, right: 52, top: 40, bottom: Math.max(56, chartGridBottomPl(rangeMs)) },
+      grid: { left: 52, right: 52, top: 40, bottom: Math.max(92, chartGridBottomPl(rangeMs) + 18) },
       animation: !(rangeMs && rangeMs > 24 * 3600_000),
       markArea: nightRangesMs.length
         ? {
             silent: true,
-            itemStyle: { opacity: 0.12 },
-            data: nightRangesMs.map((r) => [{ xAxis: r.fromMs }, { xAxis: r.toMs }]),
+            itemStyle: { color: '#0f172a', opacity: nightShadeOpacity },
+            label: showNightLabel
+              ? {
+                  show: true,
+                  formatter: 'NOC',
+                  color: '#94a3b8',
+                  fontSize: 10,
+                }
+              : undefined,
+            data: nightRangesMs.map((r) => [{ xAxis: r.fromMs }, { xAxis: r.toMs, name: 'NOC' }]),
           }
         : undefined,
       series,
     }),
-    [nightRangesMs, rangeMs, series, selectedMetrics, timeBounds, title],
+    [nightRangesMs, nightShadeOpacity, rangeMs, series, selectedMetrics, showNightLabel, timeBounds, title],
   );
 
   if (points.length === 0 || selectedMetrics.length === 0) {

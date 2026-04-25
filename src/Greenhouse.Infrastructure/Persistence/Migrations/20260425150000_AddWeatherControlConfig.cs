@@ -38,7 +38,7 @@ namespace Greenhouse.Infrastructure.Persistence.Migrations
                 },
                 values: new object[]
                 {
-                    1, 120m, 20m, 1600m, 1000m,
+                    1, 2000m, 20m, 1600m, 1000m,
                     "06:00", "20:00", "auto", "auto", DateTime.UtcNow
                 });
         }

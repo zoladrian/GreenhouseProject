@@ -35,7 +35,7 @@ public sealed class WeatherControlConfig
         return new WeatherControlConfig
         {
             Id = 1,
-            RainDetectedMinRaw = 120m,
+            RainDetectedMinRaw = 2000m,
             HighHumidityMinRaw = 20m,
             SunnyMinRaw = 1600m,
             CloudyMaxRaw = 1000m,
